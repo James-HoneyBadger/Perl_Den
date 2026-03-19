@@ -1,0 +1,256 @@
+=head1 Process Management and Automation
+
+=head2 Overview
+
+Automating repetitive tasks and managing processes is where Perl truly
+shines as a sysadmin tool.
+
+=head2 Fork and Exec
+
+    use POSIX qw(:sys_wait_h);
+    
+    my $pid = fork();
+    die "Fork failed: $!\n" unless defined $pid;
+    
+    if ($pid == 0) {
+        # Child process
+        exec('long_running_command', '--flag')
+            or die "Exec failed: $!\n";
+    } else {
+        # Parent
+        print "Spawned child PID: $pid\n";
+        waitpid($pid, 0);
+        my $exit_code = $? >> 8;
+        print "Child exited with: $exit_code\n";
+    }
+
+=head2 Non-Blocking Waitpid
+
+    my @children;
+    
+    # Spawn multiple workers
+    for my $i (1..5) {
+        my $pid = fork();
+        die "Fork failed\n" unless defined $pid;
+        
+        if ($pid == 0) {
+            # Child: do work
+            sleep(int(rand(10)));
+            exit(0);
+        }
+        push @children, $pid;
+    }
+    
+    # Reap children as they finish
+    while (@children) {
+        for my $i (reverse 0..$#children) {
+            my $result = waitpid($children[$i], WNOHANG);
+            if ($result > 0) {
+                printf "PID %d finished (exit %d)\n", $children[$i], $? >> 8;
+                splice @children, $i, 1;
+            }
+        }
+        sleep 1;
+    }
+
+=head2 Signal Handling
+
+    # Graceful shutdown
+    my $running = 1;
+    
+    $SIG{INT}  = sub { warn "Caught SIGINT\n";  $running = 0 };
+    $SIG{TERM} = sub { warn "Caught SIGTERM\n"; $running = 0 };
+    $SIG{HUP}  = sub { warn "Reloading config...\n"; reload_config() };
+    
+    while ($running) {
+        do_work();
+        sleep 1;
+    }
+    
+    cleanup();
+    print "Shut down cleanly.\n";
+
+=head2 Daemon Pattern
+
+    use POSIX qw(setsid);
+    
+    sub daemonize {
+        # Fork and let parent exit
+        my $pid = fork();
+        exit 0 if $pid;
+        die "Fork failed\n" unless defined $pid;
+        
+        # New session
+        setsid() or die "setsid failed: $!\n";
+        
+        # Close standard handles
+        open STDIN,  '<', '/dev/null';
+        open STDOUT, '>>', '/var/log/myapp.log';
+        open STDERR, '>>', '/var/log/myapp.log';
+        
+        # Write PID file
+        open my $pf, '>', '/var/run/myapp.pid' or die $!;
+        print $pf $$;
+        close $pf;
+    }
+    
+    daemonize();
+    # ... daemon loop ...
+
+=head2 File Watching
+
+    use File::stat;
+    
+    # Poll-based watcher
+    sub watch_file {
+        my ($file, $callback, $interval) = @_;
+        $interval //= 2;
+        
+        my $last_mtime = (stat $file)->mtime;
+        
+        while (1) {
+            sleep $interval;
+            my $mtime = (stat $file)->mtime;
+            if ($mtime != $last_mtime) {
+                $callback->($file);
+                $last_mtime = $mtime;
+            }
+        }
+    }
+    
+    # Usage
+    watch_file('/etc/nginx/nginx.conf', sub {
+        my ($file) = @_;
+        print "Config changed! Reloading nginx...\n";
+        system('sudo', 'systemctl', 'reload', 'nginx');
+    });
+
+=head2 Parallel Task Execution
+
+    # Simple parallel map
+    sub parallel_run {
+        my ($tasks, $max_workers) = @_;
+        $max_workers //= 4;
+        my @results;
+        my %pids;
+        
+        for my $task (@$tasks) {
+            # Wait if at capacity
+            while (keys %pids >= $max_workers) {
+                my $done = wait();
+                delete $pids{$done};
+            }
+            
+            my $pid = fork();
+            die "Fork failed\n" unless defined $pid;
+            
+            if ($pid == 0) {
+                $task->();
+                exit 0;
+            }
+            $pids{$pid} = 1;
+        }
+        
+        # Wait for remaining
+        while (keys %pids) {
+            my $done = wait();
+            delete $pids{$done};
+        }
+    }
+    
+    # Example: parallel ping sweep
+    my @tasks;
+    for my $i (1..254) {
+        push @tasks, sub {
+            my $host = "192.168.1.$i";
+            my $result = `ping -c 1 -W 1 $host 2>/dev/null`;
+            if ($? == 0) {
+                print "$host is alive\n";
+            }
+        };
+    }
+    parallel_run(\@tasks, 20);
+
+=head2 Cron Job Patterns
+
+    #!/usr/bin/env perl
+    # Designed to run from cron
+    use strict;
+    use warnings;
+    use Fcntl qw(:flock);
+    use POSIX qw(strftime);
+    
+    # Prevent duplicate runs with flock
+    open my $lock, '>', '/tmp/myapp.lock' or die $!;
+    flock($lock, LOCK_EX | LOCK_NB) or exit 0;  # another instance running
+    
+    # Redirect output for cron
+    my $log = '/var/log/myapp_cron.log';
+    open STDOUT, '>>', $log or die $!;
+    open STDERR, '>&STDOUT';
+    
+    my $ts = strftime('%Y-%m-%d %H:%M:%S', localtime());
+    print "[$ts] Starting scheduled task\n";
+    
+    # ... do work ...
+    
+    print "[$ts] Complete\n";
+    close $lock;
+
+=head2 Systemd Service File
+
+Create C</etc/systemd/system/myapp.service>:
+
+    [Unit]
+    Description=My Perl Application
+    After=network.target
+    
+    [Service]
+    Type=simple
+    ExecStart=/usr/bin/perl /opt/myapp/bin/myapp.pl
+    Restart=on-failure
+    RestartSec=5
+    User=myapp
+    WorkingDirectory=/opt/myapp
+    
+    [Install]
+    WantedBy=multi-user.target
+
+Then:
+
+    sudo systemctl daemon-reload
+    sudo systemctl enable myapp
+    sudo systemctl start myapp
+
+=head2 Retry Logic
+
+    sub with_retry {
+        my ($code, %opts) = @_;
+        my $max     = $opts{max_retries} // 3;
+        my $delay   = $opts{delay}       // 2;
+        my $backoff = $opts{backoff}     // 2;   # exponential
+        
+        my $attempt = 0;
+        while (1) {
+            $attempt++;
+            my $result = eval { $code->() };
+            return $result unless $@;
+            
+            if ($attempt >= $max) {
+                die "Failed after $max attempts: $@\n";
+            }
+            
+            warn "Attempt $attempt failed: $@  Retrying in ${delay}s...\n";
+            sleep $delay;
+            $delay *= $backoff;
+        }
+    }
+    
+    # Usage
+    my $data = with_retry(
+        sub { fetch_from_api('https://api.example.com/data') },
+        max_retries => 5,
+        delay       => 1,
+    );
+
+=cut

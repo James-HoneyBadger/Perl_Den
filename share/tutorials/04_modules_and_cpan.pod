@@ -1,0 +1,156 @@
+=head1 Modules, CPAN, and Code Reuse
+
+=head2 Using Modules
+
+    use File::Basename;           # core module
+    use JSON::MaybeXS;            # CPAN module
+    use lib '/path/to/my/lib';    # add custom lib path
+    use My::Module;               # your own module
+
+=head2 Writing a Module
+
+Create C<lib/My/Utils.pm>:
+
+    package My::Utils;
+    use strict;
+    use warnings;
+    use Exporter 'import';
+    
+    our @EXPORT_OK = qw(trim format_bytes timestamp);
+    
+    sub trim {
+        my ($str) = @_;
+        $str =~ s/^\s+|\s+$//g;
+        return $str;
+    }
+    
+    sub format_bytes {
+        my ($bytes) = @_;
+        my @units = qw(B KB MB GB TB);
+        my $i = 0;
+        while ($bytes >= 1024 && $i < $#units) {
+            $bytes /= 1024;
+            $i++;
+        }
+        return sprintf("%.1f %s", $bytes, $units[$i]);
+    }
+    
+    sub timestamp {
+        return POSIX::strftime('%Y-%m-%d %H:%M:%S', localtime());
+    }
+    
+    1;   # Module must return true!
+
+Use it:
+
+    use My::Utils qw(trim format_bytes);
+    print format_bytes(1536000);    # "1.5 MB"
+
+=head2 CPAN — The Treasure Trove
+
+CPAN (Comprehensive Perl Archive Network) has over 200,000 modules.
+
+B<Installing modules with cpanm:>
+
+    # Install cpanm (if not present)
+    curl -L https://cpanmin.us | perl - --sudo App::cpanminus
+    
+    # Install a module
+    cpanm JSON::MaybeXS
+    cpanm --sudo Gtk3
+    
+    # Install from a cpanfile
+    cpanm --installdeps .
+
+B<Essential CPAN modules for sysadmin:>
+
+    JSON::MaybeXS      # Fast JSON encoding/decoding
+    YAML::XS            # YAML parser
+    HTTP::Tiny           # Lightweight HTTP client (core since 5.14)
+    File::HomeDir        # Cross-platform home directory
+    Path::Tiny           # Modern file handling
+    Try::Tiny            # Clean exception handling
+    Getopt::Long         # CLI argument parsing (core)
+    IO::Socket::SSL      # HTTPS/TLS connections
+    Net::DNS             # DNS queries
+    Proc::ProcessTable   # Process listing
+    Text::Diff           # File/string diffs
+    Perl::Tidy           # Code formatter
+    Perl::Critic         # Code linter
+    Archive::Tar         # Tar file creation (core)
+    Digest::SHA          # SHA hashing (core)
+
+=head2 cpanfile — Declaring Dependencies
+
+Create a C<cpanfile> in your project root:
+
+    requires 'perl', '5.026';
+    requires 'JSON::MaybeXS', '1.004';
+    requires 'YAML::XS';
+    requires 'HTTP::Tiny';
+    
+    on 'test' => sub {
+        requires 'Test::More', '0.96';
+        requires 'Test::Exception';
+    };
+
+Then install everything:
+
+    cpanm --installdeps .
+
+=head2 Object-Oriented Perl
+
+B<Classic OOP (bless):>
+
+    package Server;
+    
+    sub new {
+        my ($class, %args) = @_;
+        return bless {
+            host => $args{host} // 'localhost',
+            port => $args{port} // 80,
+        }, $class;
+    }
+    
+    sub host { return $_[0]->{host} }
+    sub port { return $_[0]->{port} }
+    
+    sub url {
+        my ($self) = @_;
+        return "http://$self->{host}:$self->{port}";
+    }
+    
+    1;
+
+B<Using it:>
+
+    my $srv = Server->new(host => '10.0.1.5', port => 8080);
+    print $srv->url();   # http://10.0.1.5:8080
+
+=head2 FindBin — Portable Library Paths
+
+    use FindBin;
+    use lib "$FindBin::Bin/../lib";
+
+This is how the HB Perl IDE's scripts find their modules regardless of
+where they're installed.
+
+=head2 Module Best Practices
+
+=over 4
+
+=item * One module per file, filename matches package name
+
+=item * Always end with C<1;>
+
+=item * Use C<Exporter> for procedural modules
+
+=item * Document with POD (see Tutorials section)
+
+=item * Write tests (see Testing tutorial)
+
+=item * Declare version: C<our $VERSION = '1.00';>
+
+=back
+
+=cut

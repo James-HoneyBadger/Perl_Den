@@ -1,0 +1,215 @@
+=head1 Best Practices and Style Guide
+
+=head2 Code Layout
+
+=head3 Always use strict and warnings
+
+    use strict;
+    use warnings;
+
+These are non-negotiable.  They catch typos, scoping issues, and
+dozens of other common mistakes.
+
+=head3 Use meaningful variable names
+
+    # BAD
+    my $x = get_data();
+    my @a = process($x);
+    
+    # GOOD
+    my $user_config = load_config();
+    my @active_users = get_active_users($user_config);
+
+=head3 Consistent formatting
+
+Use L<Perl::Tidy|https://metacpan.org/pod/Perl::Tidy> to auto-format:
+
+    perltidy -b script.pl
+
+Recommended settings (C<.perltidyrc>):
+
+    -i=4          # 4-space indent
+    -ci=4         # continuation indent
+    -l=100        # max line length
+    -pt=2         # paren tightness
+    -bt=2         # brace tightness
+    -sbt=2        # square bracket tightness
+    -bbt=2        # block brace tightness
+    -nsfs         # no space before semicolons
+    -nolq         # no outdent long quotes
+
+=head2 Subroutine Best Practices
+
+    # Unpack arguments immediately
+    sub create_user {
+        my ($name, %opts) = @_;
+        my $role  = $opts{role}  // 'user';
+        my $shell = $opts{shell} // '/bin/bash';
+        
+        die "Name required\n" unless $name;
+        die "Invalid role: $role\n" unless $role =~ /^(admin|user|guest)$/;
+        
+        # ... logic ...
+        return { name => $name, role => $role };
+    }
+    
+    # Call it:
+    my $user = create_user('alice', role => 'admin');
+
+=head2 Error Messages
+
+    # BAD: unhelpful
+    die "Error\n";
+    die "Failed\n";
+    
+    # GOOD: context, file, what went wrong
+    die "Cannot open config file $path: $!\n";
+    die "Invalid port number '$port': must be 1-65535\n";
+    die "User '$name' not found in /etc/passwd\n";
+
+=head2 Documentation (POD)
+
+Document every module and script:
+
+    =head1 NAME
+    
+    My::Module - Brief one-line description
+    
+    =head1 SYNOPSIS
+    
+        use My::Module;
+        my $obj = My::Module->new(%options);
+        my $result = $obj->process($data);
+    
+    =head1 DESCRIPTION
+    
+    Detailed description of what this module does and why.
+    
+    =head1 METHODS
+    
+    =head2 new(%options)
+    
+    Constructor.  Accepts:
+    
+    =over 4
+    
+    =item * B<verbose> — enable debug output (default: 0)
+    
+    =item * B<timeout> — operation timeout in seconds (default: 30)
+    
+    =back
+    
+    =cut
+
+=head2 Version Control
+
+    # .gitignore for Perl projects
+    /blib/
+    /.build/
+    _build/
+    cover_db/
+    MYMETA.*
+    Makefile
+    Makefile.old
+    *.o
+    *.bs
+    *.tar.gz
+    .prove
+    *.bak
+    *~
+
+Commit messages:
+
+    # Good
+    git commit -m "Fix memory leak in log parser when file exceeds 10GB"
+    git commit -m "Add SSL certificate expiry check to NetworkDiag"
+    
+    # Bad
+    git commit -m "fixed stuff"
+    git commit -m "update"
+
+=head2 Perl::Critic — Automated Code Review
+
+    # Run the linter
+    perlcritic --severity 4 script.pl
+    
+    # Severity levels:
+    # 1 = brutal (every nit-pick)
+    # 2 = cruel
+    # 3 = harsh
+    # 4 = stern (recommended)
+    # 5 = gentle (only serious issues)
+
+Common policies to follow:
+
+=over 4
+
+=item * Don't use C<$_> implicitly in complex code
+
+=item * Don't use C<goto>
+
+=item * Don't modify C<$_> in C<map> or C<grep>
+
+=item * Always handle errors from C<open>
+
+=item * Use C<return> explicitly in subroutines
+
+=back
+
+=head2 Performance Tips
+
+    # Use index() instead of regex for simple string search
+    if (index($line, 'ERROR') >= 0) { ... }   # faster
+    if ($line =~ /ERROR/) { ... }               # flexible
+    
+    # Pre-compile regex outside loops
+    my $re = qr/^(\d{4}-\d{2}-\d{2})\s+(\S+)\s+(.*)/;
+    while (<$fh>) {
+        if (/$re/) { ... }
+    }
+    
+    # Use exists() before accessing hash keys
+    if (exists $cache{$key}) { ... }
+    
+    # Avoid unnecessary copies
+    for my $item (@large_array) {     # $item is an alias, not a copy
+        process($item);
+    }
+
+=head2 Portability Checklist
+
+=over 4
+
+=item * Use File::Spec for path construction
+
+=item * Use File::HomeDir for home directory
+
+=item * Don't hardcode C</tmp> — use File::Temp
+
+=item * Check for command availability before using
+
+=item * Use C<$^O> to detect OS when needed
+
+=item * Declare minimum Perl version: C<use v5.26;>
+
+=back
+
+=head2 Security Checklist
+
+=over 4
+
+=item * Never interpolate user input into system() or backticks
+
+=item * Use three-arg open()
+
+=item * Validate all inputs
+
+=item * Don't store secrets in code
+
+=item * Use restrictive file permissions (0600, 0700)
+
+=item * Consider taint mode for CGI/network scripts
+
+=back
+
+=cut

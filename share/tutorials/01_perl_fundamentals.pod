@@ -1,0 +1,184 @@
+=head1 Perl Fundamentals — Getting Started
+
+=head2 Welcome to Perl
+
+Perl is a powerful, flexible programming language designed for text
+processing, system administration, and rapid prototyping.  It combines
+features from C, sed, awk, and shell scripting into one cohesive language.
+
+=head2 Your First Script
+
+    #!/usr/bin/env perl
+    use strict;
+    use warnings;
+    
+    print "Hello, World!\n";
+
+Save this as C<hello.pl>, make it executable with C<chmod +x hello.pl>,
+and run it with C<./hello.pl>.
+
+B<Always> start your scripts with C<use strict> and C<use warnings>.
+These pragmas catch common mistakes and save hours of debugging.
+
+=head2 Variables
+
+Perl has three main variable types, each with a sigil:
+
+=head3 Scalars ($)
+
+Hold a single value — a string, number, or reference.
+
+    my $name  = "James";
+    my $age   = 30;
+    my $pi    = 3.14159;
+    my $undef;              # starts as undef
+
+=head3 Arrays (@)
+
+Ordered lists of scalars.
+
+    my @colours = ('red', 'green', 'blue');
+    my $first   = $colours[0];       # "red"
+    my $count   = scalar @colours;   # 3
+    push @colours, 'yellow';         # append
+    my $last = pop @colours;         # remove last
+
+=head3 Hashes (%)
+
+Key-value pairs (unordered).
+
+    my %config = (
+        host => 'localhost',
+        port => 8080,
+        ssl  => 1,
+    );
+    my $host = $config{host};        # "localhost"
+    $config{timeout} = 30;           # add new key
+    my @keys = keys %config;
+
+=head2 Control Structures
+
+    # if / elsif / else
+    if ($age >= 18) {
+        print "Adult\n";
+    } elsif ($age >= 13) {
+        print "Teenager\n";
+    } else {
+        print "Child\n";
+    }
+    
+    # unless (opposite of if)
+    unless ($verbose) {
+        print "Quiet mode\n";
+    }
+    
+    # Postfix form
+    print "OK\n" if $status eq 'success';
+    
+    # Loops
+    for my $i (0 .. 9) {
+        print "$i\n";
+    }
+    
+    for my $item (@colours) {
+        print "Colour: $item\n";
+    }
+    
+    while (my $line = <STDIN>) {
+        chomp $line;
+        last if $line eq 'quit';
+        print "You said: $line\n";
+    }
+
+=head2 Subroutines
+
+    sub greet {
+        my ($name, $greeting) = @_;
+        $greeting //= "Hello";         # default value
+        return "$greeting, $name!";
+    }
+    
+    print greet("World");              # Hello, World!
+    print greet("Perl", "Howdy");      # Howdy, Perl!
+
+=head2 String Operations
+
+    my $str = "  Hello, World!  ";
+    
+    # Trim whitespace
+    $str =~ s/^\s+|\s+$//g;
+    
+    # Split and join
+    my @words = split /,\s*/, "one, two, three";
+    my $joined = join(' | ', @words);
+    
+    # Substring
+    my $sub = substr($str, 0, 5);     # "Hello"
+    
+    # Length
+    my $len = length($str);
+    
+    # Case
+    my $upper = uc($str);
+    my $lower = lc($str);
+
+=head2 Regular Expressions
+
+Perl's regex engine is legendary:
+
+    my $text = "The quick brown fox jumps over 42 lazy dogs";
+    
+    # Match
+    if ($text =~ /(\d+)/) {
+        print "Found number: $1\n";   # 42
+    }
+    
+    # Substitute
+    (my $censored = $text) =~ s/fox/****/;
+    
+    # Global replace
+    $text =~ s/\b\w/uc($&)/ge;        # Capitalise each word
+    
+    # Named captures
+    if ($text =~ /(?<animal>fox|dog)/) {
+        print "Animal: $+{animal}\n";
+    }
+
+=head2 File I/O
+
+    # Read
+    open my $fh, '<', 'data.txt' or die "Cannot open: $!\n";
+    while (my $line = <$fh>) {
+        chomp $line;
+        print "$line\n";
+    }
+    close $fh;
+    
+    # Write
+    open my $out, '>', 'output.txt' or die "Cannot write: $!\n";
+    print $out "Line 1\n";
+    print $out "Line 2\n";
+    close $out;
+    
+    # Append
+    open my $log, '>>', 'app.log' or die $!;
+    print $log "Log entry at " . localtime() . "\n";
+    close $log;
+
+=head2 Next Steps
+
+Once you're comfortable with these basics, explore:
+
+=over 4
+
+=item * B<References and Data Structures> — complex nested data
+
+=item * B<Modules and CPAN> — reuse code from the world's largest Perl library
+
+=item * B<Regular Expressions Deep Dive> — master pattern matching
+
+=item * B<Error Handling> — eval, die, Try::Tiny
+
+=back
+
+=cut

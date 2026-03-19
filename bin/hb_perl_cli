@@ -1,0 +1,164 @@
+#!/usr/bin/perl
+# ============================================================================
+# HB Perl CLI - Command line interface for the HB Perl toolkit
+# ============================================================================
+use strict;
+use warnings;
+use utf8;
+use FindBin qw($RealBin);
+use lib "$RealBin/../lib";
+use File::Basename qw(basename);
+use File::Spec;
+use HBPerl::ScriptRegistry qw(script_index find_script);
+
+my $SCRIPTS_DIR = File::Spec->catdir($RealBin, '..', 'scripts');
+my $PROGRAM     = $ENV{HB_LAUNCH_NAME} || basename($0);
+
+my $command = shift @ARGV // 'help';
+
+# Allow shorthand invocation: `hb_cli system_info`
+if ($command !~ /^(?:help|--help|-h|list|run|ide)$/) {
+    unshift @ARGV, $command;
+    $command = 'run';
+}
+
+if ($command eq 'help' || $command eq '--help' || $command eq '-h') {
+    _print_help();
+    exit 0;
+}
+
+if ($command eq 'list') {
+    _list_scripts();
+    exit 0;
+}
+
+if ($command eq 'run') {
+    my $name = shift @ARGV;
+    if (!$name) {
+        warn "Missing script name. Try: $PROGRAM list\n";
+        exit 2;
+    }
+
+    my $script_path = _resolve_script_path($name);
+    if (!$script_path) {
+        warn "Unknown script: $name\n";
+        warn "Run '$PROGRAM list' to see available scripts.\n";
+        exit 2;
+    }
+
+    exec $^X, $script_path, @ARGV;
+    die "Failed to execute $script_path: $!";
+}
+
+if ($command eq 'ide') {
+    my $ide = File::Spec->catfile($RealBin, 'hb_perl_ide');
+    exec $^X, $ide, @ARGV;
+    die "Failed to launch IDE: $!";
+}
+
+warn "Unknown command: $command\n";
+_print_help();
+exit 2;
+
+sub _resolve_script_path {
+    my ($raw_name) = @_;
+    return undef if !defined $raw_name || $raw_name eq '';
+
+    my @match = find_script($raw_name);
+    return undef unless @match;
+
+    my $path = File::Spec->catfile($SCRIPTS_DIR, $match[1]);
+    return -f $path ? $path : undef;
+}
+
+sub _list_scripts {
+    print "HB Perl CLI scripts\n";
+    print "=" x 80, "\n";
+    printf "%-22s %-12s %s\n", 'Script', 'Category', 'Description';
+    print "-" x 80, "\n";
+
+    for my $row (script_index()) {
+        my ($name, $file, $module, $desc, $category) = @$row;
+        my $stem = $file; $stem =~ s/\.pl$//;
+        printf "%-22s %-12s %s\n", $stem, $category, $desc;
+    }
+
+    print "\nExamples:\n";
+    print "  $PROGRAM run system_info\n";
+    print "  $PROGRAM run port_scanner -- --host 127.0.0.1\n";
+    print "  $PROGRAM ide\n";
+}
+
+sub _print_help {
+    print <<HELP;
+HB Perl CLI
+
+Usage:
+  $PROGRAM list
+      List all bundled toolkit scripts.
+
+  $PROGRAM run <script_name> [-- <script_args...>]
+      Run a toolkit script by name.
+      Name accepts underscore or hyphen style, with or without .pl.
+
+  $PROGRAM ide
+      Launch the GTK IDE.
+
+  $PROGRAM help
+      Show this help.
+HELP
+}
+
+__END__
+
+=head1 NAME
+
+hb_perl_cli - Command-line interface for the HB Perl toolkit
+
+=head1 SYNOPSIS
+
+    hb_perl_cli list
+    hb_perl_cli run <script_name> [-- <args>]
+    hb_perl_cli ide
+    hb_perl_cli help
+
+=head1 DESCRIPTION
+
+A command-line front-end for running the 15 bundled sysadmin scripts.
+Script names accept underscore or hyphen style, with or without F<.pl>.
+
+Shorthand invocation is supported: C<hb_perl_cli system_info> is
+equivalent to C<hb_perl_cli run system_info>.
+
+=head1 COMMANDS
+
+=over 4
+
+=item B<list>
+
+Print a table of all available toolkit scripts.
+
+=item B<run E<lt>nameE<gt> [-- E<lt>argsE<gt>]>
+
+Execute a toolkit script by name.  Any arguments after C<--> are
+passed to the script.
+
+=item B<ide>
+
+Launch the GTK-based IDE (L<hb_perl_ide>).
+
+=item B<help>
+
+Show the built-in usage summary.
+
+=back
+
+=head1 AUTHOR
+
+James
+
+=head1 LICENSE
+
+MIT
+
+=cut

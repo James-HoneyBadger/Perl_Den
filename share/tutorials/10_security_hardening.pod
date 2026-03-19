@@ -1,0 +1,210 @@
+=head1 Security Hardening with Perl
+
+=head2 Overview
+
+Security is not optional.  Perl scripts that manage systems need to be
+written defensively.  This tutorial covers both writing secure Perl code
+and using Perl to audit/harden Linux systems.
+
+=head2 Taint Mode
+
+Perl's taint mode prevents using untrusted data in sensitive operations:
+
+    #!/usr/bin/env perl -T
+    use strict;
+    use warnings;
+    
+    # $ENV{PATH} is tainted
+    $ENV{PATH} = '/usr/bin:/bin';   # must explicitly set
+    
+    my $input = <STDIN>;   # tainted!
+    
+    # This will die in taint mode:
+    # system("echo $input");
+    
+    # Untaint by validating with a regex
+    if ($input =~ /^([a-zA-Z0-9_]+)$/) {
+        my $clean = $1;            # $1 is untainted
+        system("echo", $clean);    # safe: no shell interpolation
+    } else {
+        die "Invalid input\n";
+    }
+
+=head2 Avoiding Shell Injection
+
+    # DANGEROUS: shell interpolation
+    my $file = $user_input;
+    system("cat $file");            # what if $file = "; rm -rf /"?
+    
+    # SAFE: list form bypasses shell
+    system('cat', $file);
+    
+    # SAFE: open with explicit mode
+    open my $fh, '<', $file or die $!;
+    
+    # DANGEROUS: two-arg open
+    open my $fh, $file;             # $file could be "|rm -rf /"
+    
+    # SAFE: three-arg open (always use this)
+    open my $fh, '<', $file or die $!;
+
+=head2 Secure File Operations
+
+    use File::Temp qw(tempfile tempdir);
+    use Fcntl qw(:mode);
+    
+    # Secure temp files (not predictable)
+    my ($fh, $filename) = tempfile(
+        'myapp_XXXX',
+        DIR    => '/tmp',
+        SUFFIX => '.dat',
+        UNLINK => 1,          # auto-delete on exit
+    );
+    
+    # Check permissions before reading sensitive files
+    my @st = stat($config_file) or die $!;
+    my $mode = $st[2] & 07777;
+    if ($mode & S_IROTH) {
+        die "Config file is world-readable! Fix permissions.\n";
+    }
+    
+    # Set restrictive permissions on output
+    open my $out, '>', $sensitive_file or die $!;
+    chmod 0600, $sensitive_file;
+
+=head2 Password/Secret Handling
+
+    # Never hardcode secrets
+    # BAD:
+    my $db_pass = 'supersecret123';
+    
+    # GOOD: environment variable
+    my $db_pass = $ENV{DB_PASSWORD}
+        // die "DB_PASSWORD not set\n";
+    
+    # GOOD: read from protected file
+    my $pass = do {
+        open my $fh, '<', '/etc/myapp/db.pass' or die $!;
+        my $p = <$fh>;
+        chomp $p;
+        close $fh;
+        $p;
+    };
+    
+    # Clear sensitive data when done
+    $db_pass = "\0" x length($db_pass);
+    undef $db_pass;
+
+=head2 Auditing File Permissions
+
+    use File::Find;
+    use Fcntl ':mode';
+    
+    # Find SUID/SGID binaries
+    find(sub {
+        return unless -f $_;
+        my @st = stat($_) or return;
+        my $mode = $st[2];
+        
+        if ($mode & S_ISUID) {
+            printf "SUID: %04o %s\n", $mode & 07777, $File::Find::name;
+        }
+        if ($mode & S_ISGID) {
+            printf "SGID: %04o %s\n", $mode & 07777, $File::Find::name;
+        }
+    }, '/usr/bin', '/usr/sbin');
+    
+    # Find world-writable directories
+    find(sub {
+        return unless -d $_;
+        my @st = stat($_) or return;
+        my $mode = $st[2];
+        if (($mode & S_IWOTH) && !($mode & S_ISVTX)) {
+            printf "WORLD-WRITABLE (no sticky): %s\n", $File::Find::name;
+        }
+    }, '/tmp', '/var');
+
+=head2 SSH Key Audit
+
+    my $ssh_dir = "$ENV{HOME}/.ssh";
+    if (-d $ssh_dir) {
+        my @st = stat($ssh_dir);
+        my $mode = $st[2] & 07777;
+        warn ".ssh directory too open: $mode\n" if $mode != 0700;
+        
+        for my $key (glob("$ssh_dir/id_*")) {
+            next if $key =~ /\.pub$/;
+            my @kst = stat($key);
+            my $kmode = $kst[2] & 07777;
+            warn "Private key too open: $key ($kmode)\n" if $kmode != 0600;
+        }
+    }
+
+=head2 Monitoring Failed Logins
+
+    # From auth.log or journalctl
+    my @failed;
+    open my $pipe, '-|', 'journalctl', '-u', 'sshd', '--since', '1 hour ago', '--no-pager'
+        or die $!;
+    while (<$pipe>) {
+        if (/Failed password.*from\s+([\d.]+)/) {
+            push @failed, $1;
+        }
+    }
+    close $pipe;
+    
+    # Count by IP
+    my %by_ip;
+    $by_ip{$_}++ for @failed;
+    
+    for my $ip (sort { $by_ip{$b} <=> $by_ip{$a} } keys %by_ip) {
+        printf "%-16s %d failures\n", $ip, $by_ip{$ip};
+        if ($by_ip{$ip} > 10) {
+            warn "ALERT: Possible brute-force from $ip\n";
+        }
+    }
+
+=head2 Checking for Rootkits
+
+    # Check for hidden processes
+    my %ps_pids;
+    for my $line (`ps aux`) {
+        $ps_pids{$1} = 1 if $line =~ /^\S+\s+(\d+)/;
+    }
+    
+    my %proc_pids;
+    opendir my $dh, '/proc' or die $!;
+    while (my $entry = readdir $dh) {
+        $proc_pids{$entry} = 1 if $entry =~ /^\d+$/;
+    }
+    closedir $dh;
+    
+    for my $pid (sort { $a <=> $b } keys %proc_pids) {
+        unless ($ps_pids{$pid}) {
+            warn "Hidden process? PID $pid in /proc but not in ps!\n";
+        }
+    }
+
+=head2 Security Checklist Script
+
+Here's a pattern for a comprehensive security check:
+
+    my @checks = (
+        ['SSH root login disabled',
+            sub { `grep -i '^PermitRootLogin' /etc/ssh/sshd_config` =~ /no/i }],
+        ['Firewall active',
+            sub { system('iptables -L -n >/dev/null 2>&1') == 0 ||
+                  system('nft list ruleset >/dev/null 2>&1') == 0 }],
+        ['No empty passwords',
+            sub { !`sudo awk -F: '\$2 == \"\" {print}' /etc/shadow 2>/dev/null` }],
+        ['Core dumps disabled',
+            sub { `ulimit -c` =~ /^0$/ }],
+    );
+    
+    for my $check (@checks) {
+        my ($name, $test) = @$check;
+        my $result = eval { $test->() } ? 'PASS' : 'FAIL';
+        printf "[%s] %s\n", $result, $name;
+    }
+
+=cut

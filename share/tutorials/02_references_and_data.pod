@@ -1,0 +1,149 @@
+=head1 References and Data Structures
+
+=head2 Why References?
+
+Perl's three basic types (scalars, arrays, hashes) are flat.  References
+let you build complex, nested data structures — arrays of hashes, hashes
+of arrays, and more.
+
+=head2 Creating References
+
+    # Array reference
+    my $colours_ref = ['red', 'green', 'blue'];
+    my @colours     = ('red', 'green', 'blue');
+    my $ref2        = \@colours;       # reference to existing array
+    
+    # Hash reference
+    my $config_ref = {
+        host => 'localhost',
+        port => 8080,
+    };
+    
+    # Scalar reference
+    my $name = "Perl";
+    my $name_ref = \$name;
+    
+    # Code reference (anonymous sub)
+    my $greet = sub { return "Hello, $_[0]!" };
+
+=head2 Dereferencing
+
+    # Array ref
+    my @items = @$colours_ref;         # copy out
+    my $first = $colours_ref->[0];     # element access
+    push @$colours_ref, 'yellow';      # modify
+    
+    # Hash ref
+    my $host = $config_ref->{host};
+    $config_ref->{ssl} = 1;
+    my @keys = keys %$config_ref;
+    
+    # Scalar ref
+    print $$name_ref;                  # "Perl"
+    
+    # Code ref
+    print $greet->("World");           # "Hello, World!"
+
+=head2 Nested Structures
+
+    # Array of hashes (very common pattern)
+    my @users = (
+        { name => 'Alice', role => 'admin',  uid => 1000 },
+        { name => 'Bob',   role => 'user',   uid => 1001 },
+        { name => 'Carol', role => 'admin',  uid => 1002 },
+    );
+    
+    for my $user (@users) {
+        printf "%-10s %-8s UID %d\n",
+            $user->{name}, $user->{role}, $user->{uid};
+    }
+    
+    # Hash of arrays
+    my %teams = (
+        ops  => ['Alice', 'Dave'],
+        dev  => ['Bob', 'Carol', 'Eve'],
+    );
+    
+    for my $team (sort keys %teams) {
+        print "$team: " . join(', ', @{$teams{$team}}) . "\n";
+    }
+    
+    # Deep nesting
+    my $server = {
+        name    => 'web-01',
+        network => {
+            ip      => '10.0.1.5',
+            gateway => '10.0.1.1',
+            dns     => ['8.8.8.8', '8.8.4.4'],
+        },
+        services => [
+            { name => 'nginx',  port => 80,  status => 'running' },
+            { name => 'sshd',   port => 22,  status => 'running' },
+        ],
+    };
+    
+    # Deep access
+    my $gw   = $server->{network}{gateway};
+    my $dns1 = $server->{network}{dns}[0];
+    my $svc  = $server->{services}[0]{name};
+
+=head2 ref() — Checking Types
+
+    my $thing = [1, 2, 3];
+    
+    if (ref $thing eq 'ARRAY') {
+        print "It's an array ref with " . scalar(@$thing) . " items\n";
+    } elsif (ref $thing eq 'HASH') {
+        print "It's a hash ref\n";
+    } elsif (ref $thing eq 'CODE') {
+        print "It's a code ref\n";
+    } elsif (!ref $thing) {
+        print "It's a plain scalar\n";
+    }
+
+=head2 Data::Dumper — Inspecting Structures
+
+    use Data::Dumper;
+    
+    my $complex = { users => \@users, server => $server };
+    print Dumper($complex);
+    
+    # Compact output
+    local $Data::Dumper::Indent   = 1;
+    local $Data::Dumper::Sortkeys = 1;
+    print Dumper($complex);
+
+=head2 Common Patterns
+
+B<Accumulating into a hash of arrays:>
+
+    my %by_role;
+    for my $user (@users) {
+        push @{$by_role{$user->{role}}}, $user->{name};
+    }
+    # %by_role = ( admin => ['Alice','Carol'], user => ['Bob'] )
+
+B<Counting occurrences:>
+
+    my %count;
+    for my $item (@data) {
+        $count{$item}++;
+    }
+
+B<Sorting complex structures:>
+
+    my @sorted = sort { $a->{name} cmp $b->{name} } @users;
+    my @by_uid = sort { $a->{uid} <=> $b->{uid} }   @users;
+
+=head2 JSON Round-Trip
+
+    use JSON::MaybeXS qw(encode_json decode_json);
+    
+    # Perl → JSON
+    my $json = encode_json($server);
+    
+    # JSON → Perl
+    my $data = decode_json($json);
+    print $data->{name};    # "web-01"
+
+=cut

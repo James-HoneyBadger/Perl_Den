@@ -1,0 +1,563 @@
+/* HB Perl IDE - Dark Theme (VS Code Dark+ inspired) */
+@define-color bg_color #1e1e1e;
+@define-color surface_color #252526;
+@define-color overlay_color #2d2d30;
+@define-color fg_color #d4d4d4;
+@define-color subtext_color #9da5b4;
+@define-color border_color #3e3e42;
+@define-color accent_color #3794ff;
+@define-color accent_hover #4ea1ff;
+@define-color success_color #89d185;
+@define-color warning_color #cca700;
+@define-color error_color #f14c4c;
+@define-color selected_bg #04395e;
+@define-color selected_fg #d4d4d4;
+@define-color tab_active #1e1e1e;
+@define-color tab_inactive #252526;
+@define-color toolbar_bg #252526;
+@define-color header_bg #252526;
+@define-color sidebar_bg #252526;
+@define-color panel_bg #1e1e1e;
+
+/* ── Window ── */
+window, .background {
+    background-color: @bg_color;
+    color: @fg_color;
+}
+
+/* ── Header Bar ── */
+headerbar, .titlebar {
+    background-color: @header_bg;
+    color: @fg_color;
+    border-bottom: 1px solid @border_color;
+    padding: 2px 8px;
+    min-height: 38px;
+}
+headerbar .title {
+    color: @accent_color;
+    font-weight: bold;
+    font-size: 14px;
+}
+headerbar .subtitle {
+    color: @subtext_color;
+    font-size: 10px;
+}
+
+/* ── Menu Bar ── */
+menubar {
+    background-color: @header_bg;
+    color: @fg_color;
+    border-bottom: 1px solid @border_color;
+    padding: 1px 0;
+    background-image: none;
+    box-shadow: none;
+}
+menubar > menuitem,
+.menubar > menuitem {
+    padding: 4px 10px;
+    color: @fg_color;
+    background-color: transparent;
+    background-image: none;
+    text-shadow: none;
+}
+menubar > menuitem:hover,
+.menubar > menuitem:hover {
+    background-color: @overlay_color;
+    background-image: none;
+    color: @accent_color;
+    box-shadow: none;
+    text-shadow: none;
+    border-radius: 4px;
+}
+
+/* ── Menus ── */
+menu, .menu,
+.popup, .context-menu {
+    background-color: @surface_color;
+    background-image: none;
+    color: @fg_color;
+    border: 1px solid @border_color;
+    border-radius: 8px;
+    border-image: none;
+    padding: 4px 0;
+    box-shadow: 0 3px 12px alpha(#000000, 0.25);
+    text-shadow: none;
+}
+menu menuitem,
+menu > menuitem,
+.menu > menuitem {
+    padding: 6px 16px;
+    color: @fg_color;
+    background-color: @surface_color;
+    background-image: none;
+    text-shadow: none;
+    border-radius: 0;
+    border-image: none;
+    box-shadow: none;
+    min-height: 18px;
+}
+menu menuitem:hover,
+menu menuitem:active,
+menu > menuitem:hover,
+menu > menuitem:active,
+.menu > menuitem:hover,
+.menu > menuitem:active {
+    background-color: @overlay_color;
+    background-image: none;
+    color: @accent_color;
+    text-shadow: none;
+    box-shadow: none;
+    border-radius: 4px;
+}
+menu menuitem:disabled,
+.menu > menuitem:disabled {
+    color: @subtext_color;
+    background-color: @surface_color;
+    background-image: none;
+    text-shadow: none;
+}
+menu menuitem label,
+.menu > menuitem label {
+    color: inherit;
+}
+menu menuitem accelerator,
+.menu > menuitem accelerator {
+    color: @subtext_color;
+}
+menu menuitem arrow,
+menu > menuitem > arrow,
+.menu > menuitem > arrow {
+    color: @subtext_color;
+    -gtk-icon-shadow: none;
+}
+menu menuitem:hover arrow,
+menu > menuitem:hover > arrow,
+.menu > menuitem:hover > arrow {
+    color: @accent_color;
+    -gtk-icon-shadow: none;
+}
+menu separator,
+.menu separator,
+menuitem separator {
+    background-color: @border_color;
+    background-image: none;
+    border-image: none;
+    min-height: 1px;
+    margin: 4px 8px;
+}
+menu button,
+.menu button {
+    background-color: @overlay_color;
+    background-image: none;
+    color: @fg_color;
+    box-shadow: none;
+    border-image: none;
+}
+menu arrow,
+.menu > arrow {
+    color: @subtext_color;
+    background-color: transparent;
+    background-image: none;
+    border-color: transparent;
+    -gtk-icon-shadow: none;
+}
+menu > arrow:hover,
+.menu > arrow:hover {
+    color: @accent_color;
+    background-color: @overlay_color;
+    background-image: none;
+    box-shadow: none;
+}
+
+/* ── Toolbar ── */
+toolbar {
+    background-color: @toolbar_bg;
+    border-bottom: 1px solid @border_color;
+    padding: 2px 4px;
+}
+toolbar button {
+    background: transparent;
+    color: @fg_color;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    margin: 1px;
+    min-height: 24px;
+    min-width: 24px;
+}
+toolbar button:hover {
+    background-color: @overlay_color;
+    color: @accent_color;
+}
+toolbar button:active {
+    background-color: @selected_bg;
+}
+toolbar separator {
+    background-color: @border_color;
+    min-width: 1px;
+    margin: 4px 4px;
+}
+
+/* ── Buttons ── */
+button {
+    background-color: @overlay_color;
+    color: @fg_color;
+    border: 1px solid @border_color;
+    border-radius: 6px;
+    padding: 4px 12px;
+    min-height: 24px;
+    transition: 200ms ease;
+}
+button:hover {
+    background-color: shade(@overlay_color, 1.2);
+    border-color: @accent_color;
+    color: @accent_color;
+}
+button:active, button:checked {
+    background-color: @accent_color;
+    color: @surface_color;
+}
+button.flat {
+    background: transparent;
+    border: none;
+}
+button.flat:hover {
+    background-color: @overlay_color;
+}
+button.destructive-action {
+    background-color: @error_color;
+    color: @surface_color;
+    border-color: @error_color;
+}
+button.suggested-action {
+    background-color: @accent_color;
+    color: @surface_color;
+    border-color: @accent_color;
+}
+
+/* ── Notebook (Tabs) ── */
+notebook {
+    background-color: @bg_color;
+}
+notebook header {
+    background-color: @surface_color;
+    border-bottom: 1px solid @border_color;
+}
+notebook header tabs {
+    background-color: transparent;
+}
+notebook tab {
+    background-color: @tab_inactive;
+    color: @subtext_color;
+    padding: 4px 8px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    min-height: 28px;
+}
+notebook tab:checked {
+    background-color: @tab_active;
+    color: @fg_color;
+    border-bottom: 2px solid @accent_color;
+}
+notebook tab:hover:not(:checked) {
+    background-color: @overlay_color;
+    color: @fg_color;
+}
+notebook tab button {
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    padding: 0;
+    min-width: 18px;
+    min-height: 18px;
+    margin-left: 4px;
+    color: @subtext_color;
+}
+notebook tab button:hover {
+    background-color: @error_color;
+    color: @surface_color;
+}
+
+/* ── Text Views & Source View ── */
+textview, textview text {
+    background-color: @bg_color;
+    color: @fg_color;
+    font-family: "Noto Sans Mono", "Adwaita Mono", "DejaVu Sans Mono", monospace;
+}
+
+/* ── Entry (Text Input) ── */
+entry {
+    background-color: @surface_color;
+    color: @fg_color;
+    border: 1px solid @border_color;
+    border-radius: 6px;
+    padding: 6px 10px;
+    min-height: 20px;
+}
+entry:focus {
+    border-color: @accent_color;
+    box-shadow: 0 0 0 1px alpha(@accent_color, 0.3);
+}
+
+/* ── TreeView (Sidebar) ── */
+treeview, treeview.view {
+    background-color: @sidebar_bg;
+    color: @fg_color;
+    -GtkTreeView-horizontal-separator: 0;
+    -GtkTreeView-vertical-separator: 0;
+}
+treeview.sidebar-tree {
+    background-color: @sidebar_bg;
+    font-family: "Adwaita Sans", "DejaVu Sans", sans-serif;
+    font-size: 11px;
+    padding: 2px 0;
+}
+treeview.sidebar-tree row {
+    border-radius: 4px;
+    margin: 0 4px;
+}
+treeview:selected, treeview.view:selected,
+treeview.sidebar-tree:selected {
+    background-color: @selected_bg;
+    color: @fg_color;
+    border-radius: 4px;
+}
+treeview:hover,
+treeview.sidebar-tree row:hover {
+    background-color: alpha(@overlay_color, 0.6);
+    border-radius: 4px;
+}
+
+/* ── Paned (Splitter) ── */
+paned > separator {
+    background-color: @border_color;
+    min-width: 2px;
+    min-height: 2px;
+}
+paned > separator:hover {
+    background-color: @accent_color;
+}
+
+/* ── Scrollbar ── */
+scrollbar {
+    background-color: transparent;
+}
+scrollbar slider {
+    background-color: @overlay_color;
+    border-radius: 99px;
+    min-width: 6px;
+    min-height: 6px;
+}
+scrollbar slider:hover {
+    background-color: @subtext_color;
+    min-width: 10px;
+}
+scrollbar slider:active {
+    background-color: @accent_color;
+}
+
+/* ── ScrolledWindow ── */
+scrolledwindow {
+    background-color: transparent;
+}
+
+/* ── Frame ── */
+frame > border {
+    border-color: @border_color;
+    border-radius: 6px;
+}
+
+/* ── Labels ── */
+label {
+    color: @fg_color;
+}
+label.dim-label {
+    color: @subtext_color;
+}
+.accent {
+    color: @accent_color;
+}
+.success {
+    color: @success_color;
+}
+.warning {
+    color: @warning_color;
+}
+.error {
+    color: @error_color;
+}
+
+/* ── Status Bar ── */
+.statusbar, statusbar {
+    background-color: @panel_bg;
+    color: @subtext_color;
+    border-top: 1px solid @border_color;
+    padding: 2px 12px;
+    font-size: 11px;
+}
+.statusbar label {
+    color: @subtext_color;
+    font-size: 11px;
+}
+
+/* ── Dialog ── */
+dialog .dialog-vbox {
+    background-color: @bg_color;
+}
+dialog headerbar {
+    background-color: @header_bg;
+}
+
+/* ── Tooltip ── */
+tooltip, tooltip.background {
+    background-color: @surface_color;
+    color: @fg_color;
+    border: 1px solid @border_color;
+    border-radius: 6px;
+    padding: 6px 10px;
+    box-shadow: 0 3px 12px alpha(#000000, 0.25);
+}
+
+/* ── InfoBar ── */
+infobar {
+    border-radius: 0;
+}
+infobar.info {
+    background-color: alpha(@accent_color, 0.15);
+    color: @accent_color;
+}
+infobar.warning {
+    background-color: alpha(@warning_color, 0.15);
+    color: @warning_color;
+}
+infobar.error {
+    background-color: alpha(@error_color, 0.15);
+    color: @error_color;
+}
+
+/* ── SpinButton ── */
+spinbutton {
+    background-color: @entry_bg;
+    color: @fg_color;
+    border: 1px solid @border_color;
+    border-radius: 6px;
+}
+spinbutton button {
+    background-color: @surface_color;
+    color: @fg_color;
+    border: none;
+    border-radius: 6px;
+}
+spinbutton button:hover {
+    background-color: @hover_bg;
+}
+
+/* ── ComboBox ── */
+combobox button.combo {
+    background-color: @entry_bg;
+    color: @fg_color;
+    border: 1px solid @border_color;
+    border-radius: 6px;
+    padding: 4px 8px;
+    background-image: none;
+}
+combobox button.combo:hover {
+    background-color: @hover_bg;
+}
+
+/* ── CheckButton / RadioButton ── */
+checkbutton,
+radiobutton {
+    color: @fg_color;
+}
+checkbutton check,
+radiobutton radio {
+    background-color: @entry_bg;
+    border: 1px solid @border_color;
+    border-radius: 4px;
+    min-width: 16px;
+    min-height: 16px;
+}
+checkbutton check:checked,
+radiobutton radio:checked {
+    background-color: @accent_color;
+    color: @bg_color;
+}
+
+/* ── FontButton ── */
+fontbutton button {
+    background-color: @entry_bg;
+    color: @fg_color;
+    border: 1px solid @border_color;
+    border-radius: 6px;
+    padding: 4px 8px;
+    background-image: none;
+}
+fontbutton button:hover {
+    background-color: @hover_bg;
+}
+
+/* ── ProgressBar ── */
+progressbar trough {
+    background-color: @surface_color;
+    border: 1px solid @border_color;
+    border-radius: 4px;
+    min-height: 8px;
+}
+progressbar progress {
+    background-color: @accent_color;
+    border-radius: 4px;
+    min-height: 8px;
+}
+progressbar text {
+    color: @fg_color;
+    font-size: 10px;
+}
+
+/* ── Custom classes ── */
+.sidebar-header {
+    background-color: @surface_color;
+    padding: 8px 12px;
+    border-bottom: 1px solid @border_color;
+    font-family: "Adwaita Sans", "DejaVu Sans", "Droid Sans", sans-serif;
+    font-weight: bold;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: @accent_color;
+}
+
+.script-category {
+    font-weight: bold;
+    color: @accent_color;
+}
+
+.dashboard-card {
+    background-color: @surface_color;
+    border: 1px solid @border_color;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 4px;
+}
+
+.dashboard-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: @accent_color;
+}
+
+.dashboard-label {
+    font-size: 11px;
+    color: @subtext_color;
+}
+
+.output-panel {
+    background-color: @panel_bg;
+    font-family: "Noto Sans Mono", "Adwaita Mono", "DejaVu Sans Mono", monospace;
+    font-size: 11px;
+}
+
+.search-bar {
+    background-color: @surface_color;
+    border-bottom: 1px solid @border_color;
+    padding: 4px 8px;
+}

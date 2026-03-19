@@ -1,0 +1,187 @@
+=head1 File and Text Processing Mastery
+
+=head2 The Perl One-Liner Mindset
+
+Perl shines at quick text transformations.  These patterns scale from
+one-liners to full scripts.
+
+=head2 Reading Files — Multiple Approaches
+
+    # Line by line (memory efficient)
+    open my $fh, '<', $file or die $!;
+    while (my $line = <$fh>) {
+        chomp $line;
+        process($line);
+    }
+    close $fh;
+    
+    # Slurp entire file
+    open my $fh, '<', $file or die $!;
+    local $/;
+    my $content = <$fh>;
+    close $fh;
+    
+    # Into an array
+    open my $fh, '<', $file or die $!;
+    my @lines = <$fh>;
+    close $fh;
+    chomp @lines;
+
+=head2 CSV Processing
+
+    # Simple (no quoting)
+    while (<$fh>) {
+        chomp;
+        my @fields = split /,/;
+        printf "Name: %s, Age: %s\n", $fields[0], $fields[1];
+    }
+    
+    # With Text::CSV (handles quoting, escaping)
+    use Text::CSV;
+    my $csv = Text::CSV->new({ binary => 1, auto_diag => 1 });
+    
+    open my $fh, '<:encoding(UTF-8)', 'data.csv' or die $!;
+    my $header = $csv->getline($fh);
+    $csv->column_names(@$header);
+    
+    while (my $row = $csv->getline_hr($fh)) {
+        printf "%s (age %d)\n", $row->{name}, $row->{age};
+    }
+    close $fh;
+
+=head2 Config File Parsing
+
+    # INI-style (simple)
+    my %config;
+    my $section = 'default';
+    open my $fh, '<', '/etc/myapp.conf' or die $!;
+    while (<$fh>) {
+        chomp;
+        s/#.*//;               # strip comments
+        s/^\s+|\s+$//g;        # trim
+        next unless length;
+        
+        if (/^\[(.+)\]$/) {
+            $section = $1;
+        } elsif (/^(\w+)\s*=\s*(.*)/) {
+            $config{$section}{$1} = $2;
+        }
+    }
+    close $fh;
+    
+    # YAML
+    use YAML::XS qw(LoadFile);
+    my $config = LoadFile('/etc/myapp.yml');
+    
+    # JSON
+    use JSON::MaybeXS;
+    open my $jfh, '<', 'config.json' or die $!;
+    my $data = decode_json(do { local $/; <$jfh> });
+    close $jfh;
+
+=head2 Log Parsing Patterns
+
+    # Apache combined log
+    my $re = qr{
+        ^([\d.]+)\s+            # IP
+        \S+\s+\S+\s+           # ident, user
+        \[([^\]]+)\]\s+        # timestamp
+        "(\w+)\s+(\S+).*?"\s+  # method, path
+        (\d+)\s+               # status
+        (\d+)                  # size
+    }x;
+    
+    while (<$fh>) {
+        if (/$re/) {
+            my ($ip, $date, $method, $path, $status, $size) = ($1,$2,$3,$4,$5,$6);
+            $count{$status}++;
+            $bytes += $size;
+        }
+    }
+
+=head2 In-Place Editing
+
+    # Perl's -i flag (like sed -i)
+    # From command line:
+    #   perl -pi -e 's/old/new/g' file.txt
+    
+    # In a script:
+    {
+        local @ARGV = ($filename);
+        local $^I = '.bak';     # create backup with .bak extension
+        while (<>) {
+            s/old_value/new_value/g;
+            print;
+        }
+    }
+
+=head2 Multi-File Search and Replace
+
+    use File::Find;
+    
+    my $search  = qr/deprecated_function/;
+    my $replace = 'new_function';
+    my $count   = 0;
+    
+    find(sub {
+        return unless /\.pl$|\.pm$/;
+        
+        open my $fh, '<', $_ or return;
+        my $content = do { local $/; <$fh> };
+        close $fh;
+        
+        if ($content =~ s/$search/$replace/g) {
+            open my $out, '>', $_ or die $!;
+            print $out $content;
+            close $out;
+            $count++;
+            print "Updated: $File::Find::name\n";
+        }
+    }, 'lib/');
+    
+    print "Modified $count files\n";
+
+=head2 Generating Reports
+
+    # Columnar output
+    my @data = (
+        ['Host',  'Status', 'Uptime'],
+        ['web-01', 'UP',    '45d'],
+        ['web-02', 'DOWN',  '0d'],
+        ['db-01',  'UP',    '120d'],
+    );
+    
+    # Calculate column widths
+    my @widths;
+    for my $row (@data) {
+        for my $i (0..$#$row) {
+            my $len = length($row->[$i]);
+            $widths[$i] = $len if !$widths[$i] || $len > $widths[$i];
+        }
+    }
+    
+    # Print with formatting
+    my $fmt = join('  ', map { "%-${_}s" } @widths) . "\n";
+    printf $fmt, @{$data[0]};
+    print '-' x 40, "\n";
+    for my $row (@data[1..$#data]) {
+        printf $fmt, @$row;
+    }
+
+=head2 Encoding and UTF-8
+
+    # Read UTF-8 file
+    open my $fh, '<:encoding(UTF-8)', $file or die $!;
+    
+    # Write UTF-8
+    open my $out, '>:encoding(UTF-8)', $output or die $!;
+    
+    # STDOUT in UTF-8
+    binmode STDOUT, ':encoding(UTF-8)';
+    
+    # Decode/encode manually
+    use Encode qw(decode encode);
+    my $text = decode('UTF-8', $bytes);
+    my $bytes = encode('UTF-8', $text);
+
+=cut

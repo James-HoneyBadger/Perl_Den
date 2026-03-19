@@ -1,0 +1,160 @@
+=head1 Regular Expressions — Deep Dive
+
+=head2 Overview
+
+Perl's regex engine is one of the most powerful available.  Master it
+and you'll be able to parse, transform, and validate virtually any text.
+
+=head2 Basic Matching
+
+    my $text = "Error: disk full on /dev/sda1";
+    
+    if ($text =~ /error/i) {
+        print "Found an error!\n";
+    }
+
+The C<i> flag makes the match case-insensitive.
+
+=head2 Captures
+
+    # Numbered captures
+    if ($text =~ /(Error|Warning):\s+(.+)/) {
+        print "Level: $1\n";    # Error
+        print "Message: $2\n";  # disk full on /dev/sda1
+    }
+    
+    # Named captures
+    if ($text =~ /(?<level>\w+):\s+(?<msg>.+)/) {
+        print "Level: $+{level}\n";
+        print "Message: $+{msg}\n";
+    }
+
+=head2 Character Classes
+
+    \d    # digit       [0-9]
+    \D    # non-digit   [^0-9]
+    \w    # word char   [a-zA-Z0-9_]
+    \W    # non-word
+    \s    # whitespace  [ \t\n\r\f]
+    \S    # non-space
+    .     # any char except newline
+    
+    # Custom classes
+    [aeiou]       # vowels
+    [^aeiou]      # non-vowels
+    [0-9a-fA-F]   # hex digits
+
+=head2 Quantifiers
+
+    *      # 0 or more (greedy)
+    +      # 1 or more (greedy)
+    ?      # 0 or 1
+    {3}    # exactly 3
+    {2,5}  # 2 to 5
+    {3,}   # 3 or more
+    
+    # Non-greedy (lazy) — add ?
+    *?     # 0 or more (lazy)
+    +?     # 1 or more (lazy)
+
+B<Example — greedy vs lazy:>
+
+    my $html = '<b>bold</b> and <i>italic</i>';
+    
+    # Greedy: matches everything from first < to last >
+    $html =~ /<(.+)>/;       # $1 = "b>bold</b> and <i>italic</i"
+    
+    # Lazy: matches minimal
+    $html =~ /<(.+?)>/;      # $1 = "b"
+
+=head2 Anchors
+
+    ^      # start of string (or line with /m)
+    $      # end of string (or line with /m)
+    \b     # word boundary
+    \B     # non-word boundary
+    \A     # absolute start of string
+    \z     # absolute end of string
+
+=head2 Alternation and Grouping
+
+    # Either/or
+    /cat|dog|fish/
+    
+    # Grouping without capturing
+    /(?:https?|ftp):\/\//
+    
+    # Lookahead / lookbehind
+    /\d+(?= dollars)/         # lookahead: "100" in "100 dollars"
+    /(?<=\$)\d+/              # lookbehind: "50" in "$50"
+    /\w+(?!\.exe)/            # negative lookahead
+    /(?<!un)happy/            # negative lookbehind
+
+=head2 Substitution
+
+    my $line = "  Hello,   World!  ";
+    
+    # Basic replace
+    $line =~ s/World/Perl/;
+    
+    # Global replace
+    $line =~ s/\s+/ /g;           # collapse whitespace
+    
+    # Trim
+    $line =~ s/^\s+|\s+$//g;
+    
+    # Using captures in replacement
+    my $date = "2024-01-15";
+    $date =~ s/(\d{4})-(\d{2})-(\d{2})/$3\/$2\/$1/;  # 15/01/2024
+    
+    # Code in replacement (/e flag)
+    my $text = "item_count: 5, max_retries: 3";
+    $text =~ s/(\w+):\s*(\d+)/uc($1) . "=" . ($2 * 10)/ge;
+    # "ITEM_COUNT=50, MAX_RETRIES=30"
+
+=head2 Flags Summary
+
+    /i    case-insensitive
+    /g    global (all matches)
+    /m    multiline (^ and $ match line boundaries)
+    /s    single-line (. matches \n)
+    /x    extended (allow comments and whitespace)
+    /e    evaluate replacement as code
+    /r    return modified copy (don't modify original)
+
+=head2 Extended Mode (/x)
+
+    my $ip_regex = qr{
+        ^
+        (\d{1,3})\.    # first octet
+        (\d{1,3})\.    # second octet
+        (\d{1,3})\.    # third octet
+        (\d{1,3})      # fourth octet
+        $
+    }x;
+    
+    if ("192.168.1.1" =~ $ip_regex) {
+        print "Valid IP format\n";
+    }
+
+=head2 Practical Patterns for Sysadmin
+
+    # Parse Apache/Nginx log
+    my $log = '192.168.1.1 - - [15/Jan/2024:10:30:45 +0000] "GET /index.html HTTP/1.1" 200 1234';
+    if ($log =~ /^([\d.]+)\s+\S+\s+\S+\s+\[(.+?)\]\s+"(\w+)\s+(\S+).*?"\s+(\d+)\s+(\d+)/) {
+        my ($ip, $date, $method, $path, $status, $size) = ($1,$2,$3,$4,$5,$6);
+    }
+    
+    # Extract email addresses
+    my @emails = ($text =~ /[\w.+-]+@[\w.-]+\.\w{2,}/g);
+    
+    # Validate hostname
+    my $valid = $hostname =~ /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z]{2,})+$/;
+    
+    # Parse key=value pairs
+    my %pairs;
+    while ($config_text =~ /(\w+)\s*=\s*"?([^"\n]+)"?/g) {
+        $pairs{$1} = $2;
+    }
+
+=cut

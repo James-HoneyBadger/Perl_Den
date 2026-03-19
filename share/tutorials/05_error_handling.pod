@@ -1,0 +1,156 @@
+=head1 Error Handling and Defensive Programming
+
+=head2 The Basics: die and warn
+
+    # die stops execution
+    open my $fh, '<', $file or die "Cannot open $file: $!\n";
+    
+    # warn prints to STDERR but continues
+    warn "Config file missing, using defaults\n" unless -f $config;
+
+The special variable C<$!> contains the system error message.
+
+=head2 eval — Catching Exceptions
+
+    eval {
+        # risky code
+        my $result = dangerous_operation();
+        process($result);
+    };
+    if ($@) {
+        warn "Operation failed: $@\n";
+        # handle the error gracefully
+    }
+
+B<Important:> C<$@> is fragile.  Always check it immediately after C<eval>.
+
+=head2 Try::Tiny (Recommended)
+
+    use Try::Tiny;
+    
+    try {
+        my $data = decode_json($raw);
+        process($data);
+    }
+    catch {
+        warn "JSON parsing failed: $_\n";
+    }
+    finally {
+        cleanup();    # always runs
+    };
+
+Note the semicolon after the final block — these are function calls,
+not language constructs.
+
+=head2 Defensive Input Validation
+
+    sub process_file {
+        my ($path, %opts) = @_;
+        
+        # Validate arguments
+        die "Path is required\n"            unless defined $path;
+        die "File not found: $path\n"       unless -f $path;
+        die "File not readable: $path\n"    unless -r $path;
+        die "File is empty: $path\n"        unless -s $path;
+        
+        # Validate options
+        my $max = $opts{max_lines} // 10000;
+        die "max_lines must be positive\n"  unless $max > 0;
+        
+        # Now safe to proceed
+        open my $fh, '<', $path or die "Cannot open: $!\n";
+        # ...
+    }
+
+=head2 The // Operator (Defined-Or)
+
+    my $port = $config{port} // 8080;     # use 8080 if undef
+    my $name = $ENV{USER}    // 'nobody';
+    
+    # Different from ||, which also triggers on 0 and ""
+    my $count = $result || 10;    # WRONG if $result is 0
+    my $count = $result // 10;    # RIGHT — only replaces undef
+
+=head2 Handling System Commands
+
+    sub run_command {
+        my ($cmd) = @_;
+        my $output = `$cmd 2>&1`;
+        my $exit_code = $? >> 8;
+        my $signal    = $? & 127;
+        
+        if ($signal) {
+            die "Command killed by signal $signal: $cmd\n";
+        }
+        if ($exit_code != 0) {
+            die "Command failed (exit $exit_code): $cmd\nOutput: $output\n";
+        }
+        return $output;
+    }
+    
+    # Or with open() for streaming
+    open my $pipe, '-|', 'ls', '-la', '/tmp'
+        or die "Cannot run ls: $!\n";
+    while (<$pipe>) {
+        print "  $_";
+    }
+    close $pipe or warn "ls exited with: $?\n";
+
+=head2 Timeouts
+
+    use POSIX qw(:signal_h);
+    
+    eval {
+        local $SIG{ALRM} = sub { die "Timed out!\n" };
+        alarm(10);             # 10-second timeout
+        my $result = slow_operation();
+        alarm(0);              # cancel timeout
+    };
+    alarm(0);                  # ensure alarm is cancelled
+    if ($@ =~ /Timed out/) {
+        warn "Operation took too long\n";
+    }
+
+=head2 Logging Best Practices
+
+    use POSIX qw(strftime);
+    
+    my $LOG_LEVEL = $ENV{LOG_LEVEL} // 'INFO';
+    my %LEVELS = (DEBUG => 0, INFO => 1, WARN => 2, ERROR => 3);
+    
+    sub log_msg {
+        my ($level, $msg) = @_;
+        return if ($LEVELS{$level} // 0) < ($LEVELS{$LOG_LEVEL} // 1);
+        my $ts = strftime('%Y-%m-%dT%H:%M:%S', localtime());
+        printf STDERR "[%s] [%-5s] %s\n", $ts, $level, $msg;
+    }
+    
+    log_msg('INFO',  'Script started');
+    log_msg('DEBUG', 'Processing file: ' . $file);
+    log_msg('ERROR', 'Failed to connect: ' . $!);
+
+=head2 Checklist for Robust Scripts
+
+=over 4
+
+=item * Always C<use strict; use warnings;>
+
+=item * Validate all inputs before processing
+
+=item * Use C<//> for defaults, not C<||>
+
+=item * Check return values of open(), system(), etc.
+
+=item * Use eval/Try::Tiny for risky operations
+
+=item * Set timeouts for network/external operations
+
+=item * Log errors with timestamps and context
+
+=item * Clean up resources (close handles, delete temp files)
+
+=item * Use C<END {}> blocks for guaranteed cleanup
+
+=back
+
+=cut

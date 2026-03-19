@@ -1,0 +1,17 @@
+*.bak
+*.swp
+*.tmp
+*~
+.build/
+_build/
+blib/
+Makefile
+Makefile.old
+MYMETA.*
+pm_to_blib
+cover_db/
+nytprof*
+*.o
+*.bs
+*.tar.gz
+.hb_perl_session.yml

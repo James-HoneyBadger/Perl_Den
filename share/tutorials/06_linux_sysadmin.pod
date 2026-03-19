@@ -1,0 +1,245 @@
+=head1 Linux System Administration with Perl
+
+=head2 Why Perl for Sysadmin?
+
+Perl was born as a sysadmin tool.  It excels at:
+
+=over 4
+
+=item * Text parsing and log analysis (regex powerhouse)
+
+=item * Gluing system commands together
+
+=item * File and directory manipulation
+
+=item * Network operations
+
+=item * Available on virtually every Unix/Linux system
+
+=back
+
+=head2 Reading System Files
+
+Linux exposes system information via C</proc> and C</sys>:
+
+    # CPU info
+    open my $fh, '<', '/proc/cpuinfo' or die $!;
+    while (<$fh>) {
+        if (/^model name\s*:\s*(.+)/) {
+            print "CPU: $1\n";
+            last;
+        }
+    }
+    close $fh;
+    
+    # Memory
+    open $fh, '<', '/proc/meminfo' or die $!;
+    my %mem;
+    while (<$fh>) {
+        if (/^(\w+):\s+(\d+)\s+kB/) {
+            $mem{$1} = $2;
+        }
+    }
+    close $fh;
+    printf "Memory: %d MB total, %d MB available\n",
+        $mem{MemTotal} / 1024, $mem{MemAvailable} / 1024;
+    
+    # Uptime
+    open $fh, '<', '/proc/uptime' or die $!;
+    my $uptime_secs = (split /\s+/, <$fh>)[0];
+    close $fh;
+    printf "Uptime: %d days, %d hours\n",
+        $uptime_secs / 86400, ($uptime_secs % 86400) / 3600;
+
+=head2 Managing Files and Directories
+
+    use File::Find;
+    use File::Copy;
+    use File::Path qw(make_path remove_tree);
+    use File::stat;
+    
+    # Find all .conf files
+    find(sub {
+        return unless /\.conf$/;
+        print "$File::Find::name\n";
+    }, '/etc');
+    
+    # Recursive directory creation
+    make_path('/opt/myapp/config', '/opt/myapp/logs');
+    
+    # Copy with permissions
+    copy('/etc/hosts', '/tmp/hosts.bak') or die "Copy failed: $!\n";
+    
+    # Check file age
+    my $st = stat('/var/log/syslog');
+    my $age_hours = (time() - $st->mtime) / 3600;
+    warn "Log is old!\n" if $age_hours > 24;
+
+=head2 Running System Commands
+
+    # Simple capture
+    my $hostname = `hostname -f`;
+    chomp $hostname;
+    
+    # With error checking
+    my $df_output = `df -h 2>&1`;
+    die "df failed\n" if $? != 0;
+    
+    # Safer: avoid shell interpolation
+    open my $pipe, '-|', 'find', '/var/log', '-name', '*.log', '-mtime', '+7'
+        or die "Cannot run find: $!\n";
+    while (<$pipe>) {
+        chomp;
+        print "Old log: $_\n";
+    }
+    close $pipe;
+    
+    # With sudo
+    my $shadow = `sudo cat /etc/shadow 2>/dev/null`;
+
+=head2 Process Management
+
+    # List processes
+    my @procs = `ps aux --sort=-%cpu`;
+    for my $line (@procs[0..10]) {
+        print $line;
+    }
+    
+    # Kill a process
+    my $pid = 12345;
+    kill 'TERM', $pid or warn "Cannot signal $pid: $!\n";
+    
+    # Wait for process
+    sleep 2;
+    kill 0, $pid and kill 'KILL', $pid;   # force if still alive
+
+=head2 Service Management (systemd)
+
+    sub service_status {
+        my ($svc) = @_;
+        my $out = `systemctl is-active $svc 2>/dev/null`;
+        chomp $out;
+        return $out;    # "active", "inactive", "failed"
+    }
+    
+    sub restart_service {
+        my ($svc) = @_;
+        system('sudo', 'systemctl', 'restart', $svc);
+        return $? == 0;
+    }
+    
+    # Monitor and restart
+    my @critical = qw(sshd nginx postgresql);
+    for my $svc (@critical) {
+        my $status = service_status($svc);
+        if ($status ne 'active') {
+            warn "$svc is $status — restarting...\n";
+            restart_service($svc);
+        }
+    }
+
+=head2 User and Group Management
+
+    # Parse /etc/passwd
+    open my $pw, '<', '/etc/passwd' or die $!;
+    while (<$pw>) {
+        my ($user, undef, $uid, $gid, $gecos, $home, $shell) = split /:/;
+        next if $uid < 1000 || $user eq 'nobody';
+        printf "%-15s UID=%-5d Home=%-20s Shell=%s\n",
+            $user, $uid, $home, $shell;
+    }
+    close $pw;
+    
+    # Check group membership
+    my @groups = split /\s+/, `groups james 2>/dev/null`;
+
+=head2 Disk Space Monitoring
+
+    # Parse df output
+    my @lines = `df -h --output=target,pcent,avail 2>/dev/null`;
+    shift @lines;    # skip header
+    for my $line (@lines) {
+        if ($line =~ /^(\S+)\s+(\d+)%\s+(\S+)/) {
+            my ($mount, $pct, $avail) = ($1, $2, $3);
+            if ($pct > 90) {
+                warn "WARNING: $mount is ${pct}% full (${avail} free)\n";
+            }
+        }
+    }
+
+=head2 Network Diagnostics
+
+    use Socket;
+    
+    # DNS lookup
+    my @addrs = gethostbyname('google.com');
+    if (@addrs >= 5) {
+        for my $addr (@addrs[4..$#addrs]) {
+            print "IP: " . inet_ntoa($addr) . "\n";
+        }
+    }
+    
+    # Check if a port is open
+    use IO::Socket::INET;
+    my $sock = IO::Socket::INET->new(
+        PeerAddr => 'localhost',
+        PeerPort => 22,
+        Proto    => 'tcp',
+        Timeout  => 3,
+    );
+    if ($sock) {
+        print "SSH is listening\n";
+        close $sock;
+    } else {
+        warn "SSH port is closed\n";
+    }
+
+=head2 Scheduled Tasks with Cron
+
+    # List current crontab
+    my $crontab = `crontab -l 2>/dev/null`;
+    
+    # Add a cron job (be very careful!)
+    # Better: write a file and use crontab to install it
+    
+    # Example cron entry for your script:
+    # */5 * * * * /usr/bin/perl /opt/scripts/disk_check.pl >> /var/log/disk_check.log 2>&1
+
+=head2 Real-World Example: Log Rotation Checker
+
+    #!/usr/bin/env perl
+    use strict;
+    use warnings;
+    use File::Find;
+    use File::stat;
+    
+    my $max_size_mb = 100;
+    my $max_age_days = 30;
+    my @log_dirs = ('/var/log', '/opt/app/logs');
+    
+    my @problems;
+    
+    find(sub {
+        return unless /\.log$/;
+        my $st = stat($_) or return;
+        my $size_mb = $st->size / (1024 * 1024);
+        my $age_days = (time() - $st->mtime) / 86400;
+        
+        if ($size_mb > $max_size_mb) {
+            push @problems, sprintf("LARGE: %s (%.0f MB)",
+                $File::Find::name, $size_mb);
+        }
+        if ($age_days > $max_age_days) {
+            push @problems, sprintf("OLD: %s (%.0f days)",
+                $File::Find::name, $age_days);
+        }
+    }, @log_dirs);
+    
+    if (@problems) {
+        print "Log maintenance needed:\n";
+        print "  $_\n" for @problems;
+    } else {
+        print "All logs look good.\n";
+    }
+
+=cut

@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# ============================================================================
+# hb_tui - TUI launcher for the HB Perl toolkit
+#
+# Resolves its own location through symlinks, sources the project
+# environment, and executes bin/hb_perl_tui.
+# ============================================================================
+set -euo pipefail
+
+SOURCE="${BASH_SOURCE[0]}"
+while [[ -L "$SOURCE" ]]; do
+	DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+	SOURCE="$(readlink "$SOURCE")"
+	[[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+ROOT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+
+source "${ROOT_DIR}/_hb_env.sh"
+
+require_cmd perl
+export HB_LAUNCH_NAME="$(basename "$0")"
+
+exec perl "${HB_ROOT_DIR}/bin/hb_perl_tui" "$@"

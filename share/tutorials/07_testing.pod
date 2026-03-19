@@ -1,0 +1,212 @@
+=head1 Testing Perl Code
+
+=head2 Why Test?
+
+Untested code is broken code you haven't found yet.  Perl's testing
+ecosystem is mature and powerful.  Every script in this IDE has tests.
+
+=head2 Test::More — The Foundation
+
+    use strict;
+    use warnings;
+    use Test::More;
+    
+    # Basic assertions
+    ok(1, 'truth is true');
+    is(2 + 2, 4, 'math works');
+    isnt('foo', 'bar', 'strings differ');
+    like('Hello World', qr/World/, 'pattern match');
+    unlike('Hello', qr/\d/, 'no digits');
+    
+    # Numeric comparison
+    cmp_ok(10, '>', 5, 'ten is greater than five');
+    cmp_ok(3.14, '==', 3.14, 'floats equal');
+    
+    # Deep comparison
+    is_deeply(
+        [1, 2, 3],
+        [1, 2, 3],
+        'arrays match'
+    );
+    
+    is_deeply(
+        { host => 'localhost', port => 80 },
+        { host => 'localhost', port => 80 },
+        'hashes match'
+    );
+    
+    done_testing();
+
+=head2 Running Tests
+
+    # Single test file
+    prove t/my_test.t
+    
+    # All tests, verbose
+    prove -v t/
+    
+    # Recursive, with color
+    prove -r --color t/
+    
+    # With test harness
+    perl -Ilib t/my_test.t
+
+=head2 Subtests — Organising Tests
+
+    subtest 'User creation' => sub {
+        my $user = create_user('alice');
+        ok($user, 'user created');
+        is($user->{name}, 'alice', 'name correct');
+        is($user->{role}, 'user', 'default role');
+    };
+    
+    subtest 'User deletion' => sub {
+        ok(delete_user('alice'), 'user deleted');
+        is(get_user('alice'), undef, 'user gone');
+    };
+
+=head2 Testing for Exceptions
+
+    use Test::Exception;
+    
+    dies_ok  { divide(1, 0) }  'dies on divide by zero';
+    lives_ok { divide(10, 2) } 'normal division lives';
+    
+    throws_ok { open_file('/nonexistent') }
+        qr/Cannot open/,
+        'proper error message';
+
+=head2 Testing with Mock Data
+
+    use Test::MockModule;
+    
+    # Mock a system command
+    my $mock = Test::MockModule->new('My::SystemInfo');
+    $mock->mock('_run_command', sub {
+        my ($cmd) = @_;
+        if ($cmd =~ /uname/) {
+            return "Linux\n";
+        }
+        return '';
+    });
+    
+    my $info = My::SystemInfo::get_os();
+    is($info, 'Linux', 'OS detection works with mock');
+
+=head2 Testing File Operations
+
+    use File::Temp qw(tempdir tempfile);
+    
+    subtest 'File processing' => sub {
+        my $dir = tempdir(CLEANUP => 1);
+        
+        # Create test data
+        my $input = "$dir/input.txt";
+        open my $fh, '>', $input or die $!;
+        print $fh "line 1\nline 2\nline 3\n";
+        close $fh;
+        
+        # Run the function under test
+        my $output = "$dir/output.txt";
+        process_file($input, $output);
+        
+        # Verify
+        ok(-f $output, 'output file created');
+        open my $ofh, '<', $output or die $!;
+        my @lines = <$ofh>;
+        close $ofh;
+        is(scalar @lines, 3, 'correct number of lines');
+    };
+
+=head2 Test Plan Strategies
+
+    # Fixed plan — best for ensuring all tests ran
+    use Test::More tests => 15;
+    
+    # Dynamic — when count varies
+    use Test::More;
+    # ... tests ...
+    done_testing();
+    
+    # Skip tests conditionally
+    SKIP: {
+        skip 'Not running as root', 3 unless $< == 0;
+        ok(can_read_shadow(), 'can read /etc/shadow');
+        # ...
+    }
+    
+    # TODO tests — known failures
+    TODO: {
+        local $TODO = 'Not implemented yet';
+        ok(fancy_feature(), 'fancy feature works');
+    }
+
+=head2 Test File Layout
+
+    project/
+    ├── lib/
+    │   └── My/
+    │       └── Module.pm
+    ├── t/
+    │   ├── 00_compile.t      # can all modules load?
+    │   ├── 01_basic.t         # fundamental tests
+    │   ├── 02_advanced.t      # complex scenarios
+    │   └── data/
+    │       ├── sample.log     # test fixtures
+    │       └── config.yml
+    └── cpanfile
+
+=head2 The Compile Test
+
+Every project should have this:
+
+    # t/00_compile.t
+    use strict;
+    use warnings;
+    use Test::More;
+    
+    my @modules = qw(
+        My::Module
+        My::Utils
+        My::Config
+    );
+    
+    for my $mod (@modules) {
+        use_ok($mod) or BAIL_OUT("Cannot load $mod");
+    }
+    
+    done_testing();
+
+=head2 Code Coverage
+
+    # Install Devel::Cover
+    cpanm Devel::Cover
+    
+    # Run tests with coverage
+    cover -test
+    
+    # View HTML report
+    cover -report html
+    # open cover_db/coverage.html
+
+=head2 Best Practices
+
+=over 4
+
+=item * Test edge cases: empty input, undef, huge data, special chars
+
+=item * Test error paths, not just happy paths
+
+=item * Use temp files/dirs that auto-clean
+
+=item * Mock external dependencies (network, disk, system commands)
+
+=item * Name your tests descriptively
+
+=item * Run tests before every commit
+
+=item * Aim for high coverage but don't obsess over 100%
+
+=back
+
+=cut
