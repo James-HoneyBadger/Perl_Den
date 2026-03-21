@@ -180,7 +180,11 @@ sub _get_anacron {
 
 sub _get_systemd_timers {
     my @timers;
-    my @lines = `systemctl list-timers --no-pager --plain 2>/dev/null`;
+    my @lines;
+    if (open my $fh, '-|', 'systemctl', 'list-timers', '--no-pager', '--plain') {
+        @lines = <$fh>;
+        close $fh;
+    }
     shift @lines;   # header
     for my $line (@lines) {
         chomp $line;

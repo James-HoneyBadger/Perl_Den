@@ -8,10 +8,14 @@ use utf8;
 use File::HomeDir;
 use File::Path qw(make_path);
 use File::Temp;
+use Fcntl qw(:flock);
 use YAML::XS qw(LoadFile DumpFile);
 use Carp qw(carp);
 
 our $VERSION = '1.00';
+
+# Config schema version — bump when adding/removing/renaming keys
+our $CONFIG_SCHEMA_VERSION = 3;
 
 our $CONFIG_DIR;
 our $CONFIG_FILE;
@@ -23,28 +27,44 @@ sub _ensure_dir {
     $CONFIG_DIR  //= File::HomeDir->my_home . '/.config/hb_perl';
     $CONFIG_FILE //= "$CONFIG_DIR/config.yml";
     $SESSION_FILE //= "$CONFIG_DIR/session.yml";
-    make_path($CONFIG_DIR) unless -d $CONFIG_DIR;
+    make_path($CONFIG_DIR, { mode => 0700 }) unless -d $CONFIG_DIR;
 }
 
 # ── Preferences ──
 
+# Allowed config keys with types for validation
+my %CONFIG_SCHEMA = (
+    _config_version      => 'int',
+    theme                => 'string',
+    font                 => 'string',
+    tab_width            => 'int',
+    show_line_numbers    => 'bool',
+    highlight_line       => 'bool',
+    auto_indent          => 'bool',
+    word_wrap            => 'bool',
+    editor_scheme        => 'string',
+    terminal_scrollback  => 'int',
+    recent_files         => 'array',
+    dashboard_interval   => 'int',
+    privilege_tool       => 'string',
+    font_scale           => 'int',
+);
+
 sub load {
     _ensure_dir();
     if (-f $CONFIG_FILE) {
-        eval { $DATA = LoadFile($CONFIG_FILE) // {} };
+        eval { $DATA = _load_yaml_locked($CONFIG_FILE) // {} };
         carp "Config load error: $@" if $@;
     }
+
+    # Migrate from older schema versions
+    _migrate_config();
+
     # Set defaults
-    $DATA->{theme}           //= 'vscode-dark-plus';
-    $DATA->{font}            //= 'monospace 11';
-    $DATA->{tab_width}       //= 4;
-    $DATA->{show_line_numbers} //= 1;
-    $DATA->{highlight_line}  //= 1;
-    $DATA->{auto_indent}     //= 1;
-    $DATA->{word_wrap}       //= 0;
-    $DATA->{editor_scheme}   //= 'oblivion';
-    $DATA->{terminal_scrollback} //= 10000;
-    $DATA->{recent_files}    //= [];
+    _apply_defaults();
+
+    # Validate types — coerce bad values to defaults
+    _validate_config();
 
     # Backward compatibility for previous theme names
     my %theme_alias = (
@@ -57,18 +77,21 @@ sub load {
         $DATA->{theme} = $theme_alias{$DATA->{theme}};
     }
 
+    # Clean stale entries from recent files
+    if (ref $DATA->{recent_files} eq 'ARRAY') {
+        @{$DATA->{recent_files}} = grep { defined $_ && -f $_ } @{$DATA->{recent_files}};
+    }
+
+    # Stamp current schema version
+    $DATA->{_config_version} = $CONFIG_SCHEMA_VERSION;
+
     return $DATA;
 }
 
 sub save {
     _ensure_dir();
-    eval {
-        my $tmp = File::Temp->new(DIR => $CONFIG_DIR, SUFFIX => '.tmp', UNLINK => 0);
-        DumpFile($tmp->filename, $DATA);
-        rename($tmp->filename, $CONFIG_FILE)
-            or die "rename failed: $!";
-    };
-    carp "Config save error: $@" if $@;
+    $DATA->{_config_version} = $CONFIG_SCHEMA_VERSION;
+    _save_yaml_locked($CONFIG_FILE, $DATA);
 }
 
 sub get {
@@ -83,11 +106,16 @@ sub set {
 
 sub add_recent_file {
     my ($file) = @_;
-    return unless $file && -f $file;
+    return unless defined $file && length($file) && -f $file;
     my $list = $DATA->{recent_files} //= [];
-    @$list = grep { $_ ne $file } @$list;
+    @$list = grep { defined $_ && $_ ne $file } @$list;
     unshift @$list, $file;
     splice @$list, 20 if @$list > 20;
+}
+
+sub recent_files {
+    my $list = $DATA->{recent_files} // [];
+    return [ grep { defined $_ && -f $_ } @$list ];
 }
 
 # ── Session (open tabs, window geometry) ──
@@ -95,7 +123,7 @@ sub add_recent_file {
 sub load_session {
     _ensure_dir();
     if (-f $SESSION_FILE) {
-        eval { $SESSION = LoadFile($SESSION_FILE) // {} };
+        eval { $SESSION = _load_yaml_locked($SESSION_FILE) // {} };
         carp "Session load error: $@" if $@;
     }
     $SESSION->{window_width}  //= 1400;
@@ -104,18 +132,26 @@ sub load_session {
     $SESSION->{vpaned_pos}    //= 600;
     $SESSION->{open_files}    //= [];
     $SESSION->{active_tab}    //= 0;
+
+    # Clean stale files from session
+    if (ref $SESSION->{open_files} eq 'ARRAY') {
+        @{$SESSION->{open_files}} = grep { defined $_ && -f $_ } @{$SESSION->{open_files}};
+    }
+
     return $SESSION;
 }
 
 sub save_session {
     _ensure_dir();
-    eval {
-        my $tmp = File::Temp->new(DIR => $CONFIG_DIR, SUFFIX => '.tmp', UNLINK => 0);
-        DumpFile($tmp->filename, $SESSION);
-        rename($tmp->filename, $SESSION_FILE)
-            or die "rename failed: $!";
-    };
-    carp "Session save error: $@" if $@;
+    $SESSION->{_saved_at} = time();
+    _save_yaml_locked($SESSION_FILE, $SESSION);
+}
+
+# Check if last session was saved cleanly (for crash recovery)
+sub session_was_clean {
+    return 1 unless -f $SESSION_FILE;
+    my $data = eval { _load_yaml_locked($SESSION_FILE) } // {};
+    return defined $data->{_saved_at};
 }
 
 sub session_get {
@@ -129,6 +165,128 @@ sub session_set {
 }
 
 sub config_dir { _ensure_dir(); return $CONFIG_DIR }
+
+# Detect available privilege escalation tool
+sub privilege_tool {
+    my $pref = $DATA->{privilege_tool} // 'auto';
+    return $pref unless $pref eq 'auto';
+    for my $tool (qw(pkexec sudo doas)) {
+        require HBPerl::Util;
+        my ($path) = HBPerl::Util::run_command_list('which', $tool);
+        chomp($path) if defined $path;
+        return $tool if $path && -x $path;
+    }
+    return 'sudo';  # fallback
+}
+
+# ── Internal: locked YAML I/O ──
+
+sub _load_yaml_locked {
+    my ($file) = @_;
+    open my $fh, '<', $file or die "Cannot open $file: $!";
+    flock($fh, LOCK_SH) or carp "Cannot lock $file: $!";
+    # Read within the lock scope to avoid double-open
+    local $/;
+    my $raw = <$fh>;
+    close $fh;
+    my $data = eval { YAML::XS::Load($raw) };
+    die $@ if $@;
+    # Validate structure is a plain hashref (defense against YAML object instantiation)
+    die "Config file $file: expected hash, got " . ref($data)
+        unless ref($data) eq 'HASH';
+    return $data;
+}
+
+sub _save_yaml_locked {
+    my ($file, $data) = @_;
+    _ensure_dir();
+    eval {
+        my $tmp = File::Temp->new(DIR => $CONFIG_DIR, SUFFIX => '.tmp', UNLINK => 0);
+        DumpFile($tmp->filename, $data);
+        # Acquire exclusive lock on target before rename
+        if (open my $lock_fh, '>>', $file) {
+            flock($lock_fh, LOCK_EX) or carp "Cannot lock $file: $!";
+            rename($tmp->filename, $file)
+                or die "rename failed: $!";
+            close $lock_fh;
+        } else {
+            rename($tmp->filename, $file)
+                or die "rename failed: $!";
+        }
+    };
+    carp "Save error for $file: $@" if $@;
+}
+
+# ── Internal: schema migration ──
+
+sub _migrate_config {
+    my $ver = $DATA->{_config_version} // 1;
+
+    # v1 → v2: add dashboard_interval, privilege_tool
+    if ($ver < 2) {
+        $DATA->{dashboard_interval} //= 5;
+        $DATA->{privilege_tool}     //= 'auto';
+    }
+
+    # v2 → v3: add font_scale
+    if ($ver < 3) {
+        $DATA->{font_scale} //= 100;
+    }
+
+    $DATA->{_config_version} = $CONFIG_SCHEMA_VERSION;
+}
+
+# ── Internal: apply default values for missing keys ──
+
+sub _apply_defaults {
+    $DATA->{theme}               //= 'vscode-dark-plus';
+    $DATA->{font}                //= 'monospace 11';
+    $DATA->{tab_width}           //= 4;
+    $DATA->{show_line_numbers}   //= 1;
+    $DATA->{highlight_line}      //= 1;
+    $DATA->{auto_indent}         //= 1;
+    $DATA->{word_wrap}           //= 0;
+    $DATA->{editor_scheme}       //= 'oblivion';
+    $DATA->{terminal_scrollback} //= 10000;
+    $DATA->{recent_files}        //= [];
+    $DATA->{dashboard_interval}  //= 5;
+    $DATA->{privilege_tool}      //= 'auto';
+    $DATA->{font_scale}          //= 100;
+}
+
+# ── Internal: config validation ──
+
+sub _validate_config {
+    while (my ($key, $type) = each %CONFIG_SCHEMA) {
+        next unless exists $DATA->{$key};
+        my $val = $DATA->{$key};
+        if ($type eq 'int') {
+            unless (defined $val && $val =~ /^\d+$/) {
+                delete $DATA->{$key};
+            }
+        } elsif ($type eq 'bool') {
+            $DATA->{$key} = $val ? 1 : 0;
+        } elsif ($type eq 'string') {
+            unless (defined $val && !ref($val)) {
+                delete $DATA->{$key};
+            }
+        } elsif ($type eq 'array') {
+            $DATA->{$key} = [] unless ref $val eq 'ARRAY';
+        }
+    }
+
+    # Remove unknown keys (but preserve underscore-prefixed internal keys)
+    for my $key (keys %$DATA) {
+        next if $key =~ /^_/;
+        unless (exists $CONFIG_SCHEMA{$key}) {
+            carp "Config: ignoring unknown key '$key'";
+            delete $DATA->{$key};
+        }
+    }
+
+    # Re-apply defaults for any values removed during validation
+    _apply_defaults();
+}
 
 # ── Theme-aware colour palettes ──
 # Returns a hash ref of named colours for the current theme so that
@@ -166,6 +324,22 @@ my %PALETTES = (
         # VTE terminal
         vte_bg_r => 0.953, vte_bg_g => 0.953, vte_bg_b => 0.953,
         vte_fg_r => 0.118, vte_fg_g => 0.118, vte_fg_b => 0.118,
+    },
+    'high-contrast' => {
+        accent      => '#ffff00',
+        fg          => '#ffffff',
+        subtext     => '#cccccc',
+        dim         => '#999999',
+        bg          => '#000000',
+        surface     => '#0a0a0a',
+        panel_bg    => '#000000',
+        error       => '#ff3333',
+        success     => '#00ff00',
+        warning     => '#ffaa00',
+        info        => '#6fc3df',
+        # VTE terminal
+        vte_bg_r => 0.0, vte_bg_g => 0.0, vte_bg_b => 0.0,
+        vte_fg_r => 1.0, vte_fg_g => 1.0, vte_fg_b => 1.0,
     },
 );
 

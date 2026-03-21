@@ -7,12 +7,14 @@ use warnings;
 use utf8;
 use FindBin qw($RealBin);
 use POSIX qw(strftime);
+use Carp qw(carp);
 use Exporter 'import';
 
 our $VERSION = '1.00';
 our @EXPORT_OK = qw(
     format_bytes  format_number  timestamp  trim
-    run_command   run_command_sudo  slurp_file
+    run_command   run_command_list  run_command_sudo
+    shell_quote   slurp_file
     find_share_dir  is_root
 );
 
@@ -72,6 +74,25 @@ sub run_command {
         local $/;
         $output = <$fh> // '';
         close $fh;
+    } else {
+        return ('', -1);
+    }
+    my $rc = $? >> 8;
+    return ($output, $rc);
+}
+
+# Run a command in list form — no shell interpretation.
+# Safer than run_command() for untrusted arguments.
+sub run_command_list {
+    my (@cmd) = @_;
+    my $output = '';
+    my $pid = open(my $fh, '-|', @cmd);
+    if ($pid) {
+        local $/;
+        $output = <$fh> // '';
+        close $fh;
+    } else {
+        return ('', -1);
     }
     my $rc = $? >> 8;
     return ($output, $rc);
@@ -79,15 +100,29 @@ sub run_command {
 
 sub run_command_sudo {
     my ($cmd) = @_;
-    return run_command("pkexec $cmd");
+    require HBPerl::Config;
+    my $priv_tool = HBPerl::Config::privilege_tool();
+    return run_command(shell_quote($priv_tool) . " $cmd");
+}
+
+# Shell-escape a single argument for safe interpolation into shell strings.
+# Uses single-quoting with proper escaping of embedded single quotes.
+sub shell_quote {
+    my ($arg) = @_;
+    return "''" unless defined $arg && length $arg;
+    $arg =~ s/'/'\\''/g;
+    return "'$arg'";
 }
 
 sub slurp_file {
     my ($file) = @_;
-    return '' unless -f $file && -r $file;
-    open my $fh, '<:encoding(UTF-8)', $file or return '';
+    return '' unless defined $file && -f $file && -r $file;
+    open my $fh, '<:encoding(UTF-8)', $file or do {
+        carp "slurp_file: cannot open $file: $!" if $ENV{HBPERL_DEBUG};
+        return '';
+    };
     local $/;
-    my $content = <$fh>;
+    my $content = eval { <$fh> };
     close $fh;
     return $content // '';
 }
@@ -141,11 +176,23 @@ Strip leading and trailing whitespace.
 =item B<run_command($cmd)>
 
 Run a shell command via C<bash -c> and capture combined stdout/stderr.
+Returns C<($output, $exit_code)>.  Only use with trusted command strings.
+
+=item B<run_command_list(@cmd)>
+
+Run a command in list form with no shell interpretation.  Safer than
+C<run_command()> when arguments come from untrusted input.
 Returns C<($output, $exit_code)>.
 
 =item B<run_command_sudo($cmd)>
 
-Like C<run_command> but prefixed with C<pkexec> for privilege escalation.
+Like C<run_command> but prefixed with the configured privilege escalation
+tool (pkexec, sudo, or doas).
+
+=item B<shell_quote($arg)>
+
+Shell-escape a single argument for safe interpolation into shell command
+strings.  Uses single-quoting with proper escaping of embedded quotes.
 
 =item B<slurp_file($path)>
 

@@ -121,7 +121,11 @@ sub run {
 
     # Last logins
     my @last_logins;
-    my @last_output = `last -n 20 --time-format iso 2>/dev/null`;
+    my @last_output;
+    if (open my $fh, '-|', 'last', '-n', '20', '--time-format', 'iso') {
+        @last_output = <$fh>;
+        close $fh;
+    }
     for my $line (@last_output) {
         if ($line =~ /^(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/) {
             push @last_logins, {

@@ -12,6 +12,7 @@ use File::Temp;
 use IPC::Open3;
 use Symbol 'gensym';
 use Glib ('TRUE', 'FALSE');
+use HBPerl::Config;
 
 our $VERSION = '1.00';
 
@@ -23,6 +24,8 @@ sub new {
         on_exit   => $args{on_exit}   // sub {},
         running   => 0,
         pid       => undef,
+        output_lines => 0,
+        max_output_lines => $args{max_output_lines} // 50_000,
     }, $class;
 }
 
@@ -33,8 +36,19 @@ sub run_script {
 
     return if $self->{running};
 
+    # Build the exec argument list.  Accepting an arrayref avoids the
+    # shell entirely; a plain string still works for backward compat
+    # but is passed through bash -c (callers should prefer arrayref).
+    my @exec_cmd;
+    if (ref $command eq 'ARRAY') {
+        @exec_cmd = @$command;
+    } else {
+        @exec_cmd = ('/bin/bash', '-c', $command);
+    }
+
     if ($as_root && $> != 0) {
-        $command = "pkexec $command";
+        my $priv_tool = HBPerl::Config::privilege_tool();
+        unshift @exec_cmd, $priv_tool;
     }
 
     # Create pipes for STDOUT and STDERR
@@ -55,8 +69,10 @@ sub run_script {
         STDOUT->autoflush(1);
         STDERR->autoflush(1);
 
-        exec('/bin/bash', '-c', $command)
-            or die "exec failed: $!\n";
+        { no warnings 'exec'; exec(@exec_cmd); }
+        # If exec fails, report to stderr so parent can capture it
+        print STDERR "hbperl: exec failed for '$exec_cmd[0]': $!\n";
+        POSIX::_exit(127);
     }
 
     # ── Parent process ──
@@ -87,13 +103,18 @@ sub run_script {
         }
     };
 
+    my $max_lines = $self->{max_output_lines};
+
     Glib::IO->add_watch(fileno($stdout_r), ['in', 'hup'], sub {
         my ($fd, $condition) = @_;
-        if ($condition >= 'in') {
+        if ($condition =~ /in/) {
             my $buf;
             my $n = sysread($stdout_r, $buf, 8192);
-            if ($n && $n > 0) {
-                $on_stdout->($buf);
+            if (defined $n && $n > 0) {
+                if ($runner->{output_lines} < $max_lines) {
+                    $runner->{output_lines} += ($buf =~ tr/\n//);
+                    $on_stdout->($buf);
+                }
                 return TRUE;
             }
         }
@@ -104,11 +125,14 @@ sub run_script {
 
     Glib::IO->add_watch(fileno($stderr_r), ['in', 'hup'], sub {
         my ($fd, $condition) = @_;
-        if ($condition >= 'in') {
+        if ($condition =~ /in/) {
             my $buf;
             my $n = sysread($stderr_r, $buf, 8192);
-            if ($n && $n > 0) {
-                $on_stderr->($buf);
+            if (defined $n && $n > 0) {
+                if ($runner->{output_lines} < $max_lines) {
+                    $runner->{output_lines} += ($buf =~ tr/\n//);
+                    $on_stderr->($buf);
+                }
                 return TRUE;
             }
         }
@@ -142,8 +166,12 @@ sub _set_nonblock {
 }
 
 # Run a command synchronously and return (stdout, stderr, exit_code)
+# Optional last argument: hashref with { timeout => $seconds }
 sub run_sync {
     my ($class, @command) = @_;
+    my $opts = ref $command[-1] eq 'HASH' ? pop @command : {};
+    my $timeout = $opts->{timeout} // 0;  # 0 = no timeout
+
     # Accept either a list or a single string (for backward compat)
     @command = ('bash', '-c', $command[0]) if @command == 1;
 
@@ -151,8 +179,58 @@ sub run_sync {
     my $pid = open3(my $stdin_fh, my $stdout_fh, $stderr_fh, @command);
     close $stdin_fh;
 
-    my $stdout = do { local $/; <$stdout_fh> } // '';
-    my $stderr = do { local $/; <$stderr_fh> } // '';
+    # Read both streams concurrently via IO::Select to avoid deadlock
+    # when both pipe buffers fill simultaneously.
+    require IO::Select;
+    my $sel = IO::Select->new($stdout_fh, $stderr_fh);
+    my ($stdout, $stderr) = ('', '');
+    my $remaining = 2;
+    my $deadline = $timeout > 0 ? time() + $timeout : 0;
+    my $timed_out = 0;
+
+    while ($remaining > 0) {
+        my $wait = $deadline > 0 ? ($deadline - time()) : undef;
+        if (defined $wait && $wait <= 0) {
+            $timed_out = 1;
+            last;
+        }
+        my @ready = $sel->can_read($wait);
+        if (!@ready) {
+            # can_read returned empty — either all fds are done or we timed out
+            if ($deadline > 0 && time() >= $deadline) {
+                $timed_out = 1;
+            }
+            last;
+        }
+        for my $fh (@ready) {
+            my $buf;
+            my $n = sysread($fh, $buf, 8192);
+            if (!defined $n || $n == 0) {
+                $sel->remove($fh);
+                $remaining--;
+                next;
+            }
+            if ($fh == $stdout_fh) {
+                $stdout .= $buf;
+            } else {
+                $stderr .= $buf;
+            }
+        }
+    }
+
+    if ($timed_out) {
+        kill 'TERM', $pid;
+        # Give it a moment, then force-kill
+        my $reaped = waitpid($pid, WNOHANG);
+        if ($reaped == 0) {
+            kill 'KILL', $pid;
+            waitpid($pid, 0);
+        }
+        close $stdout_fh;
+        close $stderr_fh;
+        return ($stdout, "Command timed out after ${timeout}s\n" . $stderr, 124);
+    }
+
     close $stdout_fh;
     close $stderr_fh;
 

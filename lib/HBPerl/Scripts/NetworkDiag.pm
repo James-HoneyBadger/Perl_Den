@@ -95,7 +95,11 @@ EOF
 
 sub _get_interfaces {
     my @interfaces;
-    my @lines = `ip -o addr show 2>/dev/null`;
+    my @lines;
+    if (open my $fh, '-|', 'ip', '-o', 'addr', 'show') {
+        @lines = <$fh>;
+        close $fh;
+    }
     my %seen;
     for my $line (@lines) {
         if ($line =~ /^\d+:\s+(\S+)\s+inet6?\s+([\d.a-f:]+(?:\/\d+)?)/) {
@@ -104,7 +108,11 @@ sub _get_interfaces {
             my %iface = (name => $name, ip => $ip);
 
             # Get MAC and state
-            my @link = `ip link show $name 2>/dev/null`;
+            my @link;
+            if (open my $lnk_fh, '-|', 'ip', 'link', 'show', $name) {
+                @link = <$lnk_fh>;
+                close $lnk_fh;
+            }
             for (@link) {
                 $iface{state} = $1 if /state\s+(\w+)/;
                 $iface{mac} = $1 if /link\/ether\s+([\da-f:]+)/i;
@@ -129,7 +137,11 @@ sub _get_interfaces {
 }
 
 sub _get_routes {
-    my @lines = `ip route show 2>/dev/null`;
+    my @lines;
+    if (open my $fh, '-|', 'ip', 'route', 'show') {
+        @lines = <$fh>;
+        close $fh;
+    }
     chomp @lines;
     return \@lines;
 }
@@ -163,7 +175,11 @@ sub _get_dns_servers {
     }
     # Also check systemd-resolved
     if (!@servers) {
-        my @lines = `resolvectl status 2>/dev/null`;
+        my @lines;
+        if (open my $fh, '-|', 'resolvectl', 'status') {
+            @lines = <$fh>;
+            close $fh;
+        }
         for (@lines) {
             if (/DNS Servers:\s+(.+)/) {
                 push @servers, split /\s+/, $1;
@@ -190,7 +206,11 @@ sub _ping_test {
 }
 
 sub _get_default_gateway {
-    my @lines = `ip route show default 2>/dev/null`;
+    my @lines;
+    if (open my $fh, '-|', 'ip', 'route', 'show', 'default') {
+        @lines = <$fh>;
+        close $fh;
+    }
     for (@lines) {
         return $1 if /via\s+([\d.]+)/;
     }

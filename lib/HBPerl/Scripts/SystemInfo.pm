@@ -177,7 +177,11 @@ sub _read_os_release {
 
 sub _get_disk_info {
     my @disks;
-    my @lines = `df -h --output=target,size,used,avail,pcent -x tmpfs -x devtmpfs -x squashfs 2>/dev/null`;
+    my @lines;
+    if (open my $fh, '-|', 'df', '-h', '--output=target,size,used,avail,pcent', '-x', 'tmpfs', '-x', 'devtmpfs', '-x', 'squashfs') {
+        @lines = <$fh>;
+        close $fh;
+    }
     shift @lines;  # skip header
     for my $line (@lines) {
         $line =~ s/^\s+//;
@@ -193,13 +197,21 @@ sub _get_disk_info {
 
 sub _get_network_interfaces {
     my @interfaces;
-    my @lines = `ip -o addr show 2>/dev/null`;
+    my @lines;
+    if (open my $fh, '-|', 'ip', '-o', 'addr', 'show') {
+        @lines = <$fh>;
+        close $fh;
+    }
     for my $line (@lines) {
         if ($line =~ /^\d+:\s+(\S+)\s+inet\s+([\d.]+\/\d+)/) {
             my ($name, $ip) = ($1, $2);
             my $mac = '';
             my $state = 'unknown';
-            my @link = `ip link show $name 2>/dev/null`;
+            my @link;
+            if (open my $lnk_fh, '-|', 'ip', 'link', 'show', $name) {
+                @link = <$lnk_fh>;
+                close $lnk_fh;
+            }
             for (@link) {
                 $state = $1 if /state\s+(\w+)/;
                 $mac = $1 if /link\/ether\s+([\da-f:]+)/i;

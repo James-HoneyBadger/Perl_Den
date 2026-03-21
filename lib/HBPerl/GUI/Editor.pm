@@ -46,16 +46,46 @@ sub open_file {
         }
     }
 
-    open my $fh, '<:encoding(UTF-8)', $filepath or do {
-        $self->{main_window}->set_status("Error: Cannot open $filepath");
-        return;
+    # Large file guard: warn if >1MB
+    my $file_size = -s $filepath // 0;
+    my $disable_highlight = 0;
+    if ($file_size > 1_048_576) {
+        my $dialog = Gtk3::MessageDialog->new(
+            $self->{main_window}->window,
+            'modal',
+            'warning',
+            'yes-no',
+            "This file is %s. Syntax highlighting may be slow.\n\nDisable highlighting for better performance?",
+            sprintf('%.1f MB', $file_size / 1_048_576),
+        );
+        $disable_highlight = 1 if $dialog->run eq 'yes';
+        $dialog->destroy;
+    }
+
+    my $content;
+    eval {
+        open my $fh, '<:encoding(UTF-8)', $filepath or die "open: $!";
+        local $/;
+        $content = <$fh>;
+        close $fh;
     };
-    local $/;
-    my $content = <$fh>;
-    close $fh;
+    if ($@) {
+        # Fallback to Latin-1 if UTF-8 decoding fails
+        eval {
+            open my $fh, '<:encoding(iso-8859-1)', $filepath or die "open: $!";
+            local $/;
+            $content = <$fh>;
+            close $fh;
+        };
+        if ($@) {
+            $self->{main_window}->set_status("Error: Cannot open $filepath");
+            return;
+        }
+        $self->{main_window}->set_status("Warning: $filepath opened as Latin-1 (not valid UTF-8)");
+    }
 
     my $name = basename($filepath);
-    $self->_create_tab($filepath, $name, $content);
+    $self->_create_tab($filepath, $name, $content, 0, $disable_highlight);
     HBPerl::Config::add_recent_file($filepath);
     $self->{main_window}->set_status("Opened: $filepath");
 }
@@ -354,6 +384,54 @@ sub show_find_replace_bar {
     $self->{find_entry}->grab_focus;
 }
 
+# ── Go-to-Line (Ctrl+G) ──
+
+sub goto_line_dialog {
+    my ($self) = @_;
+    my $tab = $self->_current_tab or return;
+
+    my $dialog = Gtk3::Dialog->new_with_buttons(
+        'Go to Line',
+        $self->{main_window}->window,
+        'modal',
+        'gtk-cancel' => 'cancel',
+        'gtk-ok'     => 'ok',
+    );
+    $dialog->set_default_size(250, -1);
+
+    my $content = $dialog->get_content_area;
+    my $box = Gtk3::Box->new('horizontal', 8);
+    $box->set_margin_start(12);
+    $box->set_margin_end(12);
+    $box->set_margin_top(8);
+    $box->set_margin_bottom(8);
+
+    my $label = Gtk3::Label->new('Line number:');
+    $box->pack_start($label, FALSE, FALSE, 0);
+
+    my $total_lines = $tab->{buffer}->get_line_count;
+    my $entry = Gtk3::SpinButton->new_with_range(1, $total_lines, 1);
+    # Start at current line
+    my $iter = $tab->{buffer}->get_iter_at_mark($tab->{buffer}->get_insert);
+    $entry->set_value($iter->get_line + 1);
+    $entry->signal_connect('activate' => sub { $dialog->response('ok') });
+    $box->pack_start($entry, TRUE, TRUE, 0);
+
+    $content->pack_start($box, FALSE, FALSE, 0);
+    $dialog->show_all;
+    $entry->grab_focus;
+
+    if ($dialog->run eq 'ok') {
+        my $line = $entry->get_value_as_int - 1;
+        $line = 0 if $line < 0;
+        $line = $total_lines - 1 if $line >= $total_lines;
+        my $target = $tab->{buffer}->get_iter_at_line($line);
+        $tab->{buffer}->place_cursor($target);
+        $tab->{view}->scroll_to_iter($target, 0.1, TRUE, 0.0, 0.5);
+    }
+    $dialog->destroy;
+}
+
 sub _ensure_find_bar {
     my ($self) = @_;
     return if $self->{find_bar};
@@ -406,6 +484,28 @@ sub _ensure_find_bar {
 
     # Enter key triggers find
     $find_entry->signal_connect('activate' => sub { $self->_find_next });
+
+    # Escape key dismisses find bar and returns focus to editor
+    $find_entry->signal_connect('key-press-event' => sub {
+        my ($widget, $event) = @_;
+        if ($event->keyval == 0xff1b) {  # GDK_KEY_Escape
+            $bar->hide;
+            my $tab = $self->current_tab;
+            $tab->{view}->grab_focus if $tab;
+            return TRUE;
+        }
+        return FALSE;
+    });
+    $replace_entry->signal_connect('key-press-event' => sub {
+        my ($widget, $event) = @_;
+        if ($event->keyval == 0xff1b) {  # GDK_KEY_Escape
+            $bar->hide;
+            my $tab = $self->current_tab;
+            $tab->{view}->grab_focus if $tab;
+            return TRUE;
+        }
+        return FALSE;
+    });
 
     # Insert the find bar above the notebook
     my $parent = $self->{notebook}->get_parent;
@@ -508,7 +608,7 @@ sub _replace_all {
 # ── Internals ──
 
 sub _create_tab {
-    my ($self, $filepath, $name, $content, $readonly) = @_;
+    my ($self, $filepath, $name, $content, $readonly, $no_highlight) = @_;
     $content //= '';
 
     # Determine language from filename
@@ -536,7 +636,7 @@ sub _create_tab {
     } else {
         $buffer = Gtk3::SourceView::Buffer->new(undef);
     }
-    $buffer->set_highlight_syntax(TRUE);
+    $buffer->set_highlight_syntax($no_highlight ? FALSE : TRUE);
     $buffer->set_highlight_matching_brackets(TRUE);
     $buffer->set_text($content);
     $buffer->set_modified(FALSE);
@@ -563,6 +663,10 @@ sub _create_tab {
     # Font
     my $font = HBPerl::Config::get('font') // 'monospace 11';
     my $font_desc = Pango::FontDescription::from_string($font);
+    my $font_scale = (HBPerl::Config::get('font_scale') // 100) / 100.0;
+    if ($font_scale != 1.0 && $font_desc->get_size > 0) {
+        $font_desc->set_size(int($font_desc->get_size * $font_scale));
+    }
     $view->override_font($font_desc);
 
     # Wrap in scrolled window
@@ -573,6 +677,11 @@ sub _create_tab {
     # Tab label with close button
     my $tab_box = Gtk3::Box->new('horizontal', 4);
     my $label = Gtk3::Label->new($name);
+    # Show full file path on hover
+    if ($filepath) {
+        $label->set_tooltip_text($filepath);
+        $tab_box->set_tooltip_text($filepath);
+    }
     my $menu_icon_size = Gtk3::IconSize::from_name('gtk-menu');
     my $close_btn = Gtk3::Button->new_from_icon_name('window-close-symbolic', $menu_icon_size);
     $close_btn->set_relief('none');
@@ -673,6 +782,10 @@ sub apply_settings {
     my ($self) = @_;
     my $font_str   = HBPerl::Config::get('font') // 'monospace 11';
     my $font_desc  = Pango::FontDescription::from_string($font_str);
+    my $font_scale = (HBPerl::Config::get('font_scale') // 100) / 100.0;
+    if ($font_scale != 1.0 && $font_desc->get_size > 0) {
+        $font_desc->set_size(int($font_desc->get_size * $font_scale));
+    }
     my $tab_width  = HBPerl::Config::get('tab_width') // 4;
     my $show_ln    = HBPerl::Config::get('show_line_numbers') // 1;
     my $hl_line    = HBPerl::Config::get('highlight_line') // 1;

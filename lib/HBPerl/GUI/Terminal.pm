@@ -28,6 +28,7 @@ sub _build_ui {
     # Bottom panel with notebook: Terminal tab + Output tab
     my $notebook = Gtk3::Notebook->new;
     $notebook->set_tab_pos('bottom');
+    eval { $notebook->get_accessible->set_name('Terminal and output panel') };
     $self->{widget} = $notebook;
     $self->{notebook} = $notebook;
 
@@ -53,36 +54,43 @@ sub _build_ui {
 
         # Spawn shell — prefer user's $SHELL, fall back to /bin/bash
         my $shell = $ENV{SHELL} || '/bin/bash';
+        my $spawn_ok;
         eval {
             $terminal->spawn_sync(
-                ['default'],     # pty_flags (as array for GI)
+                'default',       # pty_flags
                 undef,           # working_directory
                 [$shell],        # argv
-                undef,           # envv
-                ['default'],     # spawn_flags
+                [],              # envv (inherit parent)
+                'default',       # spawn_flags
                 undef,           # child_setup
-                undef,           # child_setup_data (not needed)
+                undef,           # child_setup_data
             );
+            $spawn_ok = 1;
         };
-        if ($@) {
-            # Try alternative spawn
+        if (!$spawn_ok) {
             eval {
                 $terminal->spawn_async(
-                    'default', undef, [$shell], undef,
-                    'default', undef, -1, undef, undef,
+                    'default', undef, [$shell], [],
+                    'default', -1, undef, undef,
                 );
+                $spawn_ok = 1;
             };
+        }
+        if (!$spawn_ok) {
+            # Show error in terminal area instead of silently failing
+            warn "Terminal: failed to spawn shell '$shell': $@\n";
         }
 
         $terminal->signal_connect('child-exited' => sub {
-            # Respawn on exit
             eval {
                 $terminal->spawn_sync(
-                    ['default'], undef, [$shell], undef,
-                    ['default'], undef, undef,
+                    'default', undef, [$shell], [],
+                    'default', undef, undef,
                 );
             };
         });
+
+        eval { $terminal->get_accessible->set_name('Interactive terminal') };
 
         my $term_sw = Gtk3::ScrolledWindow->new(undef, undef);
         $term_sw->set_policy('automatic', 'always');
@@ -112,6 +120,7 @@ sub _build_ui {
     $output_view->set_cursor_visible(FALSE);
     $output_view->set_wrap_mode('word-char');
     $output_view->get_style_context->add_class('output-panel');
+    eval { $output_view->get_accessible->set_name('Script output') };
 
     my $cfg_font = HBPerl::Config::get('font') // 'monospace 11';
     my $font = Pango::FontDescription::from_string($cfg_font);
@@ -131,6 +140,12 @@ sub _build_ui {
     $output_toolbar->set_margin_end(4);
     $output_toolbar->set_margin_top(2);
     $output_toolbar->set_margin_bottom(2);
+
+    my $export_btn = Gtk3::Button->new_with_label('Export');
+    $export_btn->set_relief('none');
+    $export_btn->set_tooltip_text('Export output to file');
+    $export_btn->signal_connect(clicked => sub { $self->export_output });
+    $output_toolbar->pack_end($export_btn, FALSE, FALSE, 0);
 
     my $clear_btn = Gtk3::Button->new_with_label('Clear');
     $clear_btn->set_relief('none');
@@ -292,6 +307,60 @@ sub toggle_visibility {
         $self->{widget}->show;
         $self->{visible} = 1;
     }
+}
+
+sub show_output_tab {
+    my ($self) = @_;
+    my $output_page = $self->{has_vte} ? 1 : 0;
+    $self->{notebook}->set_current_page($output_page);
+    $self->{widget}->show unless $self->{visible};
+    $self->{visible} = 1;
+}
+
+sub export_output {
+    my ($self) = @_;
+    my $buffer = $self->{output_buffer};
+    my $text = $buffer->get_text(
+        $buffer->get_start_iter,
+        $buffer->get_end_iter,
+        TRUE,
+    );
+    return unless length $text;
+
+    my $dialog = Gtk3::FileChooserDialog->new(
+        'Export Output',
+        $self->{main_window}->window,
+        'save',
+        'gtk-cancel' => 'cancel',
+        'gtk-save'   => 'ok',
+    );
+    $dialog->set_do_overwrite_confirmation(TRUE);
+    $dialog->set_current_name('hb_perl_output.txt');
+
+    my $filter = Gtk3::FileFilter->new;
+    $filter->set_name('Text Files (*.txt)');
+    $filter->add_pattern('*.txt');
+    $dialog->add_filter($filter);
+
+    my $filter_all = Gtk3::FileFilter->new;
+    $filter_all->set_name('All Files');
+    $filter_all->add_pattern('*');
+    $dialog->add_filter($filter_all);
+
+    if ($dialog->run eq 'ok') {
+        my $file = $dialog->get_filename;
+        eval {
+            open my $fh, '>:encoding(UTF-8)', $file or die "Cannot write $file: $!";
+            print $fh $text;
+            close $fh;
+        };
+        if ($@) {
+            $self->{main_window}->set_status("Export failed: $@");
+        } else {
+            $self->{main_window}->set_status("Output exported to $file");
+        }
+    }
+    $dialog->destroy;
 }
 
 sub widget { return $_[0]->{widget} }

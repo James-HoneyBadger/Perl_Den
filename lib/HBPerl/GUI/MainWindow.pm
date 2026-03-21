@@ -7,8 +7,11 @@ use warnings;
 use utf8;
 use Glib ('TRUE', 'FALSE');
 use Gtk3;
+use File::Basename qw(dirname);
 
 use HBPerl::Config;
+use HBPerl::Git;
+use HBPerl::Util qw(shell_quote);
 use HBPerl::GUI::Toolbar;
 use HBPerl::GUI::Editor;
 use HBPerl::GUI::Terminal;
@@ -164,9 +167,20 @@ sub _build_statusbar {
     $self->{status_encoding} = Gtk3::Label->new('UTF-8');
     $bar->pack_start($self->{status_encoding}, FALSE, FALSE, 0);
 
+    $self->{status_eol} = Gtk3::Label->new('LF');
+    $bar->pack_start($self->{status_eol}, FALSE, FALSE, 0);
+
+    $self->{status_lang} = Gtk3::Label->new('Perl');
+    $bar->pack_start($self->{status_lang}, FALSE, FALSE, 0);
+
     my $perl_ver = sprintf("Perl %vd", $^V);
     my $pl = Gtk3::Label->new($perl_ver);
     $bar->pack_start($pl, FALSE, FALSE, 0);
+
+    # Git branch indicator
+    $self->{status_git} = Gtk3::Label->new('');
+    $bar->pack_start($self->{status_git}, FALSE, FALSE, 0);
+    $self->_update_git_status;
 
     return $bar;
 }
@@ -200,6 +214,10 @@ sub _handle_keypress {
         }
         elsif ($key == Gtk3::Gdk::KEY_f()) {
             $self->{editor}->show_find_bar;
+            return TRUE;
+        }
+        elsif ($key == Gtk3::Gdk::KEY_g()) {
+            $self->{editor}->goto_line_dialog;
             return TRUE;
         }
         elsif ($key == Gtk3::Gdk::KEY_h() && $shift) {
@@ -259,13 +277,26 @@ sub set_cursor_position {
     $self->{status_pos}->set_text("Ln $line, Col $col");
 }
 
+sub set_language_mode {
+    my ($self, $lang) = @_;
+    $self->{status_lang}->set_text($lang // 'Plain Text');
+}
+
+sub set_line_ending {
+    my ($self, $eol) = @_;
+    $self->{status_eol}->set_text($eol // 'LF');
+}
+
 sub run_current_script {
     my ($self) = @_;
     my $file = $self->{editor}->get_current_file;
     if ($file && -f $file) {
         $self->{editor}->save_current_file;
-        $self->{terminal}->run_command("perl '$file'");
+        $self->{terminal}->run_command("perl " . shell_quote($file));
+        # Auto-focus the output/terminal panel
+        $self->{terminal}->show_output_tab;
         $self->set_status("Running: $file");
+        $self->_update_git_status;
     } else {
         $self->set_status("No file to run");
     }
@@ -274,6 +305,7 @@ sub run_current_script {
 sub open_file_in_editor {
     my ($self, $file) = @_;
     $self->{editor}->open_file($file);
+    $self->_update_git_status;
 }
 
 sub append_output {
@@ -303,6 +335,21 @@ sub window { return $_[0]->{window} }
 sub editor { return $_[0]->{editor} }
 sub terminal { return $_[0]->{terminal} }
 sub app { return $_[0]->{app} }
+
+sub _update_git_status {
+    my ($self) = @_;
+    my $file = $self->{editor} ? $self->{editor}->get_current_file : undef;
+    my $dir = defined $file ? dirname($file) : '.';
+
+    my $summary = eval { HBPerl::Git::status_summary($dir) };
+    if (defined $summary) {
+        $self->{status_git}->set_text("\x{e0a0} $summary");  # branch icon
+        $self->{status_git}->show;
+    } else {
+        $self->{status_git}->set_text('');
+        $self->{status_git}->hide;
+    }
+}
 
 1;
 

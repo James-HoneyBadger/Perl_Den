@@ -163,7 +163,11 @@ sub _scan_local_certs {
             my $path = "$dir/$f";
             my $status = 'present';
             # Quick expiry check via openssl if available
-            my $out = `openssl x509 -enddate -noout -in "$path" 2>/dev/null`;
+            my $out = '';
+            if (open my $ssl_fh, '-|', 'openssl', 'x509', '-enddate', '-noout', '-in', $path) {
+                $out = do { local $/; <$ssl_fh> };
+                close $ssl_fh;
+            }
             if ($out && $out =~ /notAfter=(.+)/) {
                 $status = "expires: $1";
             }

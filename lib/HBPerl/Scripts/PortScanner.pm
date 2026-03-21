@@ -101,9 +101,16 @@ EOF
 
 sub _get_listening_ports {
     my @ports;
-    my @lines = `ss -tlnpH 2>/dev/null`;
+    my @lines;
+    if (open my $fh, '-|', 'ss', '-tlnpH') {
+        @lines = <$fh>;
+        close $fh;
+    }
     if (!@lines) {
-        @lines = `ss -tlnp 2>/dev/null`;
+        if (open my $fh, '-|', 'ss', '-tlnp') {
+            @lines = <$fh>;
+            close $fh;
+        }
         shift @lines;  # skip header
     }
     for my $line (@lines) {
@@ -124,9 +131,16 @@ sub _get_listening_ports {
     }
 
     # Also get UDP
-    my @ulines = `ss -ulnpH 2>/dev/null`;
+    my @ulines;
+    if (open my $fh, '-|', 'ss', '-ulnpH') {
+        @ulines = <$fh>;
+        close $fh;
+    }
     if (!@ulines) {
-        @ulines = `ss -ulnp 2>/dev/null`;
+        if (open my $fh, '-|', 'ss', '-ulnp') {
+            @ulines = <$fh>;
+            close $fh;
+        }
         shift @ulines;
     }
     for my $line (@ulines) {
@@ -150,9 +164,16 @@ sub _get_listening_ports {
 
 sub _get_established {
     my @conns;
-    my @lines = `ss -tnpH 2>/dev/null`;
+    my @lines;
+    if (open my $fh, '-|', 'ss', '-tnpH') {
+        @lines = <$fh>;
+        close $fh;
+    }
     if (!@lines) {
-        @lines = `ss -tnp 2>/dev/null`;
+        if (open my $fh, '-|', 'ss', '-tnp') {
+            @lines = <$fh>;
+            close $fh;
+        }
         shift @lines;
     }
     for my $line (@lines) {

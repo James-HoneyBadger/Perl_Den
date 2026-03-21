@@ -162,8 +162,8 @@ EOF
 
 sub _guess_severity {
     my ($msg) = @_;
-    return 'error'   if $msg =~ /\b(error|fail|fatal|crit|panic|segfault|denied)\b/i;
-    return 'warning' if $msg =~ /\b(warn|timeout|retry|refused|invalid|reject)\b/i;
+    return 'error'   if $msg =~ /\b(error|fail(?:ed|ure)?|fatal|crit(?:ical)?|panic|segfault|denied|out of memory|killed process|oom)\b/i;
+    return 'warning' if $msg =~ /\b(warn(?:ing)?|timeout|retry|refused|invalid|reject(?:ed)?|flooding)\b/i;
     return 'notice'  if $msg =~ /\b(notice|started|stopped|accepted|session)\b/i;
     return 'info';
 }

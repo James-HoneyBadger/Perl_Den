@@ -20,9 +20,17 @@ sub new {
     $self->_build_ui;
     $self->_refresh;
 
-    # Auto-refresh every 5 seconds (stops when widget is destroyed)
-    my $timer_id = Glib::Timeout->add(5000, sub {
+    # Auto-refresh at configurable interval (pause when not visible)
+    my $interval_secs = HBPerl::Config::get('dashboard_interval') // 5;
+    $interval_secs = 5 if $interval_secs < 1;
+    my $timer_id = Glib::Timeout->add($interval_secs * 1000, sub {
         return FALSE unless $self->{widget} && $self->{widget}->get_mapped;
+        # Skip refresh if dashboard tab is not currently visible
+        my $notebook = $self->{widget}->get_parent;
+        if ($notebook && $notebook->isa('Gtk3::Notebook')) {
+            my $current_page = $notebook->get_current_page;
+            return TRUE unless $current_page == 0;  # Dashboard is page 0
+        }
         $self->_refresh;
         return TRUE;
     });
@@ -105,6 +113,7 @@ sub _build_ui {
 
     my $proc_tree = Gtk3::TreeView->new($proc_store);
     $proc_tree->set_headers_visible(TRUE);
+    eval { $proc_tree->get_accessible->set_name('Top processes by CPU usage') };
     my @headers = ('PID', 'User', 'CPU%', 'MEM%', 'Command');
     for my $i (0 .. $#headers) {
         my $renderer = Gtk3::CellRendererText->new;
@@ -147,6 +156,9 @@ sub _make_card {
     $value->set_halign('start');
     $value->get_style_context->add_class('dashboard-value');
 
+    # ATK accessible name for screen readers
+    eval { $frame->get_accessible->set_name("Dashboard card: $label_text") };
+
     $box->pack_start($label, FALSE, FALSE, 0);
     $box->pack_start($value, FALSE, FALSE, 0);
     $frame->add($box);
@@ -159,12 +171,21 @@ sub _make_card {
 sub _refresh {
     my ($self) = @_;
 
-    # Hostname
-    chomp(my $hostname = `hostname 2>/dev/null` // 'unknown');
+    # Hostname (from /proc or POSIX)
+    my $hostname = 'unknown';
+    if (open my $fh, '<', '/proc/sys/kernel/hostname') {
+        chomp($hostname = <$fh> // 'unknown');
+        close $fh;
+    }
     $self->{cards}{hostname}->set_text($hostname);
 
-    # Kernel
-    chomp(my $kernel = `uname -r 2>/dev/null` // 'unknown');
+    # Kernel (from /proc/version)
+    my $kernel = 'unknown';
+    if (open my $fh, '<', '/proc/version') {
+        my $line = <$fh>;
+        close $fh;
+        $kernel = $1 if $line && $line =~ /Linux version\s+(\S+)/;
+    }
     $self->{cards}{kernel}->set_text($kernel);
 
     # Uptime
@@ -242,9 +263,15 @@ sub _refresh {
         }
     };
 
-    # Disk usage
+    # Disk usage (list-form open to avoid shell)
     eval {
-        my @lines = `df -h --output=target,size,used,avail,pcent -x tmpfs -x devtmpfs -x squashfs 2>/dev/null`;
+        my @lines;
+        if (open my $fh, '-|', 'df', '-h',
+                '--output=target,size,used,avail,pcent',
+                '-x', 'tmpfs', '-x', 'devtmpfs', '-x', 'squashfs') {
+            @lines = <$fh>;
+            close $fh;
+        }
         # Clear previous
         my @children = $self->{disk_box}->get_children;
         $_->destroy for @children;
@@ -276,9 +303,17 @@ sub _refresh {
         $self->{disk_box}->show_all;
     };
 
-    # Top processes
+    # Top processes (list-form open to avoid shell)
     eval {
-        my @lines = `ps aux --sort=-%cpu 2>/dev/null | head -11`;
+        my @lines;
+        if (open my $fh, '-|', 'ps', 'aux', '--sort=-%cpu') {
+            for (1..11) {
+                my $line = <$fh>;
+                last unless defined $line;
+                push @lines, $line;
+            }
+            close $fh;
+        }
         $self->{proc_store}->clear;
         shift @lines;  # header
         for my $line (@lines) {

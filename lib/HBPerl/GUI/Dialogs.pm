@@ -62,6 +62,7 @@ sub show_shortcuts {
         ['  Redo',            'Ctrl+Shift+Z'],
         ['  Find',            'Ctrl+F'],
         ['  Find & Replace',  'Ctrl+Shift+H'],
+        ['  Go to Line',      'Ctrl+G'],
         ['', ''],
         ['Run', ''],
         ['  Run Script',      'F5'],
@@ -140,6 +141,24 @@ sub show_preferences {
     $grid->attach($tab_spin,  1, $row, 1, 1);
     $row++;
 
+    # Font scale
+    my $scale_label = Gtk3::Label->new('Text Scale:');
+    $scale_label->set_halign('end');
+    my $scale_box = Gtk3::Box->new('horizontal', 6);
+    my $scale_slider = Gtk3::Scale->new_with_range('horizontal', 50, 200, 10);
+    $scale_slider->set_value(HBPerl::Config::get('font_scale') // 100);
+    $scale_slider->set_hexpand(TRUE);
+    $scale_slider->set_size_request(200, -1);
+    my $scale_value_label = Gtk3::Label->new(sprintf('%d%%', HBPerl::Config::get('font_scale') // 100));
+    $scale_slider->signal_connect('value-changed' => sub {
+        $scale_value_label->set_text(sprintf('%d%%', $scale_slider->get_value));
+    });
+    $scale_box->pack_start($scale_slider, TRUE, TRUE, 0);
+    $scale_box->pack_start($scale_value_label, FALSE, FALSE, 0);
+    $grid->attach($scale_label, 0, $row, 1, 1);
+    $grid->attach($scale_box,  1, $row, 1, 1);
+    $row++;
+
     # Theme
     my $theme_label = Gtk3::Label->new('Theme:');
     $theme_label->set_halign('end');
@@ -147,6 +166,7 @@ sub show_preferences {
     my @themes = (
         ['VS Code Dark+',  'vscode-dark-plus'],
         ['VS Code Light+', 'vscode-light-plus'],
+        ['High Contrast',  'high-contrast'],
     );
     $theme_combo->append_text($_->[0]) for @themes;
     my $current_theme = HBPerl::Config::get('theme') // 'vscode-dark-plus';
@@ -220,6 +240,7 @@ sub show_preferences {
     if ($dialog->run eq 'ok') {
         HBPerl::Config::set('font',              $font_btn->get_font_name);
         HBPerl::Config::set('tab_width',         $tab_spin->get_value_as_int);
+        HBPerl::Config::set('font_scale',        int($scale_slider->get_value));
         my $sel_idx = $theme_combo->get_active;
         my $theme_id = ($sel_idx >= 0 && $sel_idx <= $#themes)
             ? $themes[$sel_idx][1]

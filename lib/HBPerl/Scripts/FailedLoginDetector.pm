@@ -299,9 +299,13 @@ sub _syslog_to_epoch {
         return undef unless defined $mon;
         my @now = localtime;
         my $year = $now[5];    # years since 1900
-        # If the month is in the future, assume previous year
-        $year-- if $mon > $now[4];
-        return POSIX::mktime($s, $m, $h, $day, $mon, $year);
+        # If the log month is ahead of current month, it's from last year
+        if ($mon > $now[4]) {
+            $year--;
+        }
+        # Guard: don't overshoot — clamp to no earlier than year-1
+        my $epoch = POSIX::mktime($s, $m, $h, $day, $mon, $year);
+        return $epoch;
     }
 
     # Journalctl format: "Mon YYYY-MM-DD HH:MM:SS"
@@ -317,7 +321,11 @@ sub _get_banned_ips {
     my @banned;
 
     # fail2ban
-    my @f2b = `fail2ban-client status sshd 2>/dev/null`;
+    my @f2b;
+    if (open my $fh, '-|', 'fail2ban-client', 'status', 'sshd') {
+        @f2b = <$fh>;
+        close $fh;
+    }
     for (@f2b) {
         if (/Banned IP list:\s+(.+)/) {
             push @banned, split /\s+/, $1;
@@ -326,7 +334,11 @@ sub _get_banned_ips {
 
     # nftables / iptables
     if (!@banned) {
-        my @ipt = `iptables -L INPUT -n 2>/dev/null`;
+        my @ipt;
+        if (open my $fh, '-|', 'iptables', '-L', 'INPUT', '-n') {
+            @ipt = <$fh>;
+            close $fh;
+        }
         for (@ipt) {
             if (/DROP\s+all\s+--\s+([\d.]+)/) {
                 push @banned, $1;

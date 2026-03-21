@@ -23,12 +23,13 @@ eval {
 my $HAS_VTE = !$@;
 
 use HBPerl::Config;
+use HBPerl::Util qw(find_share_dir);
 use HBPerl::GUI::MainWindow;
 
 sub new {
     my ($class) = @_;
     my $self = bless {
-        share_dir => _find_share_dir(),
+        share_dir => find_share_dir(),
         has_vte   => $HAS_VTE,
     }, $class;
     return $self;
@@ -61,6 +62,15 @@ sub run {
 
     $main_window->show;
 
+    # Periodic session auto-save for crash recovery (every 60s)
+    $self->{autosave_timer} = Glib::Timeout->add(60_000, sub {
+        eval {
+            $main_window->save_state if $main_window;
+            HBPerl::Config::save_session();
+        };
+        return TRUE;  # keep running
+    });
+
     # Enter GTK main loop
     Gtk3::main();
 }
@@ -75,6 +85,7 @@ sub apply_theme {
         'vscode-dark'       => 'dark.css',
         'light'             => 'light.css',
         'dark'              => 'dark.css',
+        'high-contrast'     => 'high-contrast.css',
     );
     my $css_name = $theme_css{$theme} // "${theme}.css";
     my $css_file = "$self->{share_dir}/themes/${css_name}";
@@ -116,24 +127,16 @@ sub apply_theme {
 # Keep old name as alias for backward compat in startup path
 sub _apply_theme { goto &apply_theme }
 
-sub _find_share_dir {
-    my @candidates = (
-        "$RealBin/../share",
-        "$RealBin/share",
-        "/usr/share/hb_perl",
-        "$ENV{HOME}/.local/share/hb_perl",
-    );
-    for my $d (@candidates) {
-        return $d if -d $d;
-    }
-    return "$RealBin/../share";
-}
-
 sub share_dir { return $_[0]->{share_dir} }
 sub has_vte   { return $_[0]->{has_vte} }
 
 sub quit {
     my ($self) = @_;
+    # Stop auto-save timer
+    if ($self->{autosave_timer}) {
+        Glib::Source->remove($self->{autosave_timer});
+        $self->{autosave_timer} = undef;
+    }
     if ($self->{main_window}) {
         $self->{main_window}->save_state;
     }

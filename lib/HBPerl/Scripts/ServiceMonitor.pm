@@ -11,7 +11,11 @@ sub run {
 
     my @services;
     my @failed;
-    my @lines = `systemctl list-units --type=service --all --no-legend --no-pager 2>/dev/null`;
+    my @lines;
+    if (open my $fh, '-|', 'systemctl', 'list-units', '--type=service', '--all', '--no-legend', '--no-pager') {
+        @lines = <$fh>;
+        close $fh;
+    }
 
     for my $line (@lines) {
         $line =~ s/^\s+//;
@@ -37,7 +41,11 @@ sub run {
 
     # Get enabled/disabled info
     my %enabled;
-    my @enabled_lines = `systemctl list-unit-files --type=service --no-legend --no-pager 2>/dev/null`;
+    my @enabled_lines;
+    if (open my $fh, '-|', 'systemctl', 'list-unit-files', '--type=service', '--no-legend', '--no-pager') {
+        @enabled_lines = <$fh>;
+        close $fh;
+    }
     for my $line (@enabled_lines) {
         $line =~ s/^\s+//;
         my ($unit, $state) = split /\s+/, $line;

@@ -8,6 +8,7 @@ use utf8;
 use Glib ('TRUE', 'FALSE');
 use Gtk3;
 use HBPerl::ScriptRegistry qw(script_index);
+use HBPerl::Util qw(shell_quote);
 
 sub new {
     my ($class, %args) = @_;
@@ -35,6 +36,16 @@ sub _build_menubar {
     $self->_add_separator($file_menu);
     $self->_add_menu_item($file_menu, 'Close Tab',       'Ctrl+W',  sub { $mw->editor->close_current_tab });
     $self->_add_separator($file_menu);
+
+    # Recent Files submenu
+    my $recent_menu = Gtk3::Menu->new;
+    my $recent_item = Gtk3::MenuItem->new_with_label('Recent Files');
+    $recent_item->set_submenu($recent_menu);
+    $self->{recent_menu} = $recent_menu;
+    $self->_populate_recent_menu;
+    $file_menu->append($recent_item);
+
+    $self->_add_separator($file_menu);
     $self->_add_menu_item($file_menu, 'Quit',            'Ctrl+Q',  sub { $mw->app->quit });
     $menubar->append($self->_make_menu_heading('File', $file_menu));
 
@@ -45,6 +56,7 @@ sub _build_menubar {
     $self->_add_separator($edit_menu);
     $self->_add_menu_item($edit_menu, 'Find...',         'Ctrl+F',     sub { $mw->editor->show_find_bar });
     $self->_add_menu_item($edit_menu, 'Find & Replace...', 'Ctrl+Shift+H', sub { $mw->editor->show_find_replace_bar });
+    $self->_add_menu_item($edit_menu, 'Go to Line...',     'Ctrl+G',  sub { $mw->editor->goto_line_dialog });
     $self->_add_separator($edit_menu);
     $self->_add_menu_item($edit_menu, 'Preferences...',  '',           sub { HBPerl::GUI::Dialogs::show_preferences($mw) });
     $menubar->append($self->_make_menu_heading('Edit', $edit_menu));
@@ -67,7 +79,8 @@ sub _build_menubar {
         my $file = $mw->editor->get_current_file;
         if ($file && -f $file) {
             $mw->editor->save_current_file;
-            $mw->terminal->run_command("pkexec perl '$file'");
+            my $priv_tool = HBPerl::Config::privilege_tool();
+            $mw->terminal->run_command("$priv_tool perl " . shell_quote($file));
         }
     });
     $self->_add_separator($run_menu);
@@ -179,6 +192,44 @@ sub _add_menu_item {
 sub _add_separator {
     my ($self, $menu) = @_;
     $menu->append(Gtk3::SeparatorMenuItem->new);
+}
+
+sub _populate_recent_menu {
+    my ($self) = @_;
+    my $mw = $self->{main_window};
+    my $menu = $self->{recent_menu};
+    return unless $menu;
+
+    # Clear existing items
+    $_->destroy for $menu->get_children;
+
+    my $files = HBPerl::Config::recent_files();
+    if (!@$files) {
+        my $empty = Gtk3::MenuItem->new_with_label('(no recent files)');
+        $empty->set_sensitive(FALSE);
+        $menu->append($empty);
+    } else {
+        for my $file (@$files[0 .. ($#$files > 9 ? 9 : $#$files)]) {
+            my $label = $file;
+            # Show just filename with parent dir for readability
+            if ($file =~ m{([^/]+/[^/]+)$}) {
+                $label = $1;
+            }
+            my $item = Gtk3::MenuItem->new_with_label($label);
+            $item->set_tooltip_text($file);
+            my $f = $file;  # capture for closure
+            $item->signal_connect(activate => sub {
+                $mw->editor->open_file($f);
+            });
+            $menu->append($item);
+        }
+    }
+    $menu->show_all;
+}
+
+sub refresh_recent_menu {
+    my ($self) = @_;
+    $self->_populate_recent_menu;
 }
 
 sub menubar       { return $_[0]->{menubar} }

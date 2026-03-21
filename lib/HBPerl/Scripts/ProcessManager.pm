@@ -14,7 +14,11 @@ sub run {
     my @processes;
 
     # Parse ps output (more portable than Proc::ProcessTable for display)
-    my @lines = `ps aux --sort=-\%cpu 2>/dev/null`;
+    my @lines;
+    if (open my $fh, '-|', 'ps', 'aux', '--sort=-%cpu') {
+        @lines = <$fh>;
+        close $fh;
+    }
     shift @lines;  # header
 
     for my $line (@lines) {

@@ -7,7 +7,19 @@ use warnings;
 use Exporter 'import';
 
 our $VERSION = '1.00';
-our @EXPORT_OK = qw(script_index script_categories find_script);
+our @EXPORT_OK = qw(script_index script_categories find_script user_scripts_dir);
+
+# User scripts directory
+my $USER_SCRIPTS_DIR;
+
+sub user_scripts_dir {
+    unless ($USER_SCRIPTS_DIR) {
+        eval { require File::HomeDir };
+        my $home = $ENV{HOME} || (eval { File::HomeDir->my_home } // '');
+        $USER_SCRIPTS_DIR = "$home/.config/hb_perl/scripts" if $home;
+    }
+    return $USER_SCRIPTS_DIR;
+}
 
 # Canonical list of all toolkit scripts.
 # Each entry: [ display_name, script_filename, module_name, description, category ]
@@ -27,6 +39,11 @@ my @SCRIPTS = (
     ['Backup Manager',      'backup_manager.pl',       'HBPerl::Scripts::BackupManager',      'Create and manage backups',                 'Backup & Config'],
     ['Config Diff',         'config_diff.pl',          'HBPerl::Scripts::ConfigDiff',         'Compare config files against baselines',    'Backup & Config'],
     ['Duplicate Finder',    'duplicate_finder.pl',     'HBPerl::Scripts::DuplicateFinder',    'Find duplicate files by hash',              'Backup & Config'],
+    ['Firewall Auditor',    'firewall_auditor.pl',     'HBPerl::Scripts::FirewallAuditor',    'Audit iptables/nftables firewall rules',    'Security'],
+    ['Docker Monitor',      'docker_monitor.pl',       'HBPerl::Scripts::DockerMonitor',      'Container status, images, disk usage',      'Containers'],
+    ['Bandwidth Monitor',   'bandwidth_monitor.pl',    'HBPerl::Scripts::BandwidthMonitor',   'Per-interface network traffic rates',       'Network'],
+    ['Package Auditor',     'package_auditor.pl',      'HBPerl::Scripts::PackageAuditor',     'Installed packages, updates, orphans',      'System Info'],
+    ['Systemd Analyzer',    'systemd_analyzer.pl',     'HBPerl::Scripts::SystemdAnalyzer',    'Boot time analysis, failed units',          'System Info'],
 );
 
 # Category metadata: display name => { icon, emoji }
@@ -36,21 +53,23 @@ my %CATEGORY_META = (
     'User Management'  => { icon => 'system-users-symbolic',      emoji => '👤' },
     'Network'          => { icon => 'network-wired-symbolic',     emoji => '🌐' },
     'Security'         => { icon => 'security-high-symbolic',     emoji => '🔒' },
+    'Containers'       => { icon => 'application-x-executable-symbolic', emoji => '🐳' },
     'Backup & Config'  => { icon => 'drive-harddisk-symbolic',    emoji => '💾' },
+    'User Scripts'     => { icon => 'user-home-symbolic',          emoji => '👤' },
 );
 
-# Return flat list of all scripts as arrayrefs: [name, filename, module, description, category]
+# Return flat list of all scripts (built-in + user) as arrayrefs
 sub script_index {
-    return @SCRIPTS;
+    return (@SCRIPTS, _load_user_scripts());
 }
 
 # Return ordered list of categories with their scripts, for GUI tree/menus
 # Returns: ( { name, icon, emoji, items => [ [name, filename, desc], ... ] }, ... )
 sub script_categories {
-    my @order = ('System Info', 'Log Analysis', 'User Management', 'Network', 'Security', 'Backup & Config');
+    my @order = ('System Info', 'Log Analysis', 'User Management', 'Network', 'Security', 'Containers', 'Backup & Config', 'User Scripts');
     my %by_cat;
 
-    for my $s (@SCRIPTS) {
+    for my $s (@SCRIPTS, _load_user_scripts()) {
         my ($name, $file, $module, $desc, $cat) = @$s;
         push @{$by_cat{$cat}}, [$name, $file, $desc];
     }
@@ -77,20 +96,77 @@ sub find_script {
     $query =~ s/\.pl$//;
     $query = lc($query);
 
-    for my $s (@SCRIPTS) {
+    my @all = (@SCRIPTS, _load_user_scripts());
+
+    for my $s (@all) {
         my $stem = lc($s->[1]);
         $stem =~ s/\.pl$//;
         return @$s if $stem eq $query;
     }
 
     # Partial match
-    for my $s (@SCRIPTS) {
+    for my $s (@all) {
         my $stem = lc($s->[1]);
         $stem =~ s/\.pl$//;
         return @$s if $stem =~ /\Q$query\E/;
     }
 
     return ();
+}
+
+# ── User/plugin script discovery ──
+
+our @_user_scripts_cache;
+our $_user_scripts_mtime = 0;
+
+sub _load_user_scripts {
+    my $dir = user_scripts_dir();
+    return () unless $dir && -d $dir;
+
+    # Cache based on directory mtime
+    my $mtime = (stat($dir))[9] // 0;
+    return @_user_scripts_cache if $mtime == $_user_scripts_mtime && @_user_scripts_cache;
+    $_user_scripts_mtime = $mtime;
+    @_user_scripts_cache = ();
+
+    opendir(my $dh, $dir) or return ();
+    my @files = sort grep { /\.pl$/ } readdir $dh;
+    closedir $dh;
+
+    for my $file (@files) {
+        my $path = "$dir/$file";
+        next unless -f $path;
+
+        # Extract metadata from comment header lines
+        my ($name, $desc);
+        if (open my $fh, '<', $path) {
+            while (my $line = <$fh>) {
+                last if $. > 20;  # Only scan first 20 lines
+                if ($line =~ /^#\s*Name:\s*(.+)/i) {
+                    $name = $1;
+                    $name =~ s/\s+$//;
+                }
+                if ($line =~ /^#\s*Description:\s*(.+)/i) {
+                    $desc = $1;
+                    $desc =~ s/\s+$//;
+                }
+            }
+            close $fh;
+        }
+
+        # Default name from filename
+        unless ($name) {
+            $name = $file;
+            $name =~ s/\.pl$//;
+            $name =~ s/_/ /g;
+            $name =~ s/\b(\w)/uc($1)/ge;
+        }
+        $desc //= 'User script';
+
+        push @_user_scripts_cache, [$name, $path, '', $desc, 'User Scripts'];
+    }
+
+    return @_user_scripts_cache;
 }
 
 1;
@@ -123,7 +199,7 @@ HBPerl::ScriptRegistry - Canonical script index for the HB Perl toolkit
 
 =head1 DESCRIPTION
 
-Single source of truth for the 15 bundled sysadmin scripts.  The CLI, TUI,
+Single source of truth for the 20 bundled sysadmin scripts.  The CLI, TUI,
 GUI, and test suite all query this module rather than scanning the filesystem.
 
 Each script entry is an arrayref:
