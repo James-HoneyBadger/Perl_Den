@@ -10,9 +10,9 @@ use lib "$FindBin::Bin/../lib";
 
 use_ok('HBPerl::ScriptRegistry', qw(script_index script_categories find_script));
 
-subtest 'script_index returns all 15 scripts' => sub {
+subtest 'script_index returns all 20 scripts' => sub {
     my @scripts = script_index();
-    is(scalar @scripts, 15, '15 scripts registered');
+    is(scalar @scripts, 20, '20 scripts registered');
 
     for my $s (@scripts) {
         ok(ref $s eq 'ARRAY', 'entry is an arrayref');
@@ -40,7 +40,7 @@ subtest 'script_categories returns grouped data' => sub {
         ok(scalar @{$cat->{items}} > 0, "category '$cat->{name}' has items");
         $total_items += scalar @{$cat->{items}};
     }
-    is($total_items, 15, 'total items across categories equals 15');
+    is($total_items, 20, 'total items across categories equals 20');
 };
 
 subtest 'find_script exact match' => sub {

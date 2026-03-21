@@ -1,0 +1,10 @@
+Mar 15 10:00:01 server kernel: [12345.678] Out of memory: Killed process 9876 (java) total-vm:4096000kB
+Mar 15 10:01:00 server systemd[1]: Started Session 42 of user james.
+Mar 15 10:02:00 server nginx[1234]: 2026/03/15 10:02:00 [error] 1234#0: *5678 open() "/var/www/html/missing.html" failed (2: No such file or directory)
+Mar 15 10:03:00 server sshd[5678]: Accepted password for james from 192.168.1.50 port 22 ssh2
+Mar 15 10:04:00 server CRON[7890]: (root) CMD (/usr/local/bin/backup.sh)
+Mar 15 10:05:00 server postfix/smtp[1111]: warning: TLS library problem: error:14094410:SSL routines:ssl3_read_bytes:sslv3 alert handshake failure
+Mar 15 10:06:00 server kernel: [12400.123] EXT4-fs warning (device sda1): ext4_dx_add_entry:2063: Directory index full!
+Mar 15 10:07:00 server systemd[1]: nginx.service: Main process exited, code=exited, status=1/FAILURE
+Mar 15 10:08:00 server kernel: [12450.456] TCP: request_sock_TCP: Possible SYN flooding on port 80. Sending cookies.
+Mar 15 10:09:00 server audit[2222]: USER_AUTH pid=2222 uid=0 auid=1000 ses=42 msg='op=PAM:authentication acct="root" exe="/usr/bin/sudo" hostname=? addr=? terminal=/dev/pts/0 res=failed'

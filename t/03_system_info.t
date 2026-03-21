@@ -10,6 +10,9 @@ use lib "$FindBin::Bin/../lib";
 
 use_ok('HBPerl::Scripts::SystemInfo');
 
+SKIP: {
+    skip 'No /proc/meminfo (non-Linux)', 17 unless -f '/proc/meminfo';
+
 subtest 'run returns expected keys' => sub {
     my $result = HBPerl::Scripts::SystemInfo::run();
     ok(ref $result eq 'HASH', 'returns a hashref');
@@ -46,5 +49,7 @@ subtest 'format_report produces text' => sub {
     ok(length($report) > 100, 'report has content');
     like($report, qr/SYSTEM INFORMATION/i, 'report has header');
 };
+
+} # end SKIP
 
 done_testing();

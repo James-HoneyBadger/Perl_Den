@@ -10,6 +10,11 @@ use lib "$FindBin::Bin/../lib";
 
 use_ok('HBPerl::Scripts::FailedLoginDetector');
 
+SKIP: {
+    my $has_log = -f '/var/log/auth.log' || -f '/var/log/secure'
+                  || -d '/var/log/journal';
+    skip 'No auth log files accessible', 8 unless $has_log;
+
 subtest 'run returns expected structure' => sub {
     my $result = HBPerl::Scripts::FailedLoginDetector::run(hours => 1);
     ok(ref $result eq 'HASH', 'returns hashref');
@@ -26,5 +31,7 @@ subtest 'format_report works' => sub {
     ok(length($report) > 50, 'report has content');
     like($report, qr/FAILED LOGIN|BRUTE/i, 'has relevant header');
 };
+
+} # end SKIP
 
 done_testing();

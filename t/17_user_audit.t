@@ -10,6 +10,9 @@ use lib "$FindBin::Bin/../lib";
 
 use_ok('HBPerl::Scripts::UserAudit');
 
+SKIP: {
+    skip 'No /etc/passwd (non-Linux)', 16 unless -f '/etc/passwd';
+
 subtest 'run returns expected structure' => sub {
     my $result = HBPerl::Scripts::UserAudit::run();
     ok(ref $result eq 'HASH', 'returns a hashref');
@@ -53,5 +56,7 @@ subtest 'format_report produces text' => sub {
     ok(length($report) > 100, 'report has content');
     like($report, qr/USER.*AUDIT/i, 'report has header');
 };
+
+} # end SKIP
 
 done_testing();
