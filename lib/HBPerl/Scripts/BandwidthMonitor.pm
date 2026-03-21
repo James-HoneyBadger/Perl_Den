@@ -135,4 +135,14 @@ HBPerl::Scripts::BandwidthMonitor - Per-interface network traffic monitoring
 Reads C</proc/net/dev> twice with a configurable interval to calculate
 per-interface receive/transmit rates, totals, and error counts.
 
+=head1 AUTHOR
+
+James Temple <james@amiga-fan.net>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (c) 2026 Honey Badger Universe
+
+MIT License
+
 =cut

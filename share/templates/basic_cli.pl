@@ -46,6 +46,6 @@ Describe what this script does in detail.
 
 =head1 AUTHOR
 
-Your Name
+James Temple <james@amiga-fan.net>
 
 =cut

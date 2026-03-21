@@ -260,10 +260,12 @@ If called with no argument, calls C<run()> internally.
 
 =head1 AUTHOR
 
-James
+James Temple <james@amiga-fan.net>
 
-=head1 LICENSE
+=head1 COPYRIGHT AND LICENSE
 
-MIT
+Copyright (c) 2026 Honey Badger Universe
+
+MIT License
 
 =cut

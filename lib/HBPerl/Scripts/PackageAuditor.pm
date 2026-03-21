@@ -242,4 +242,14 @@ Detects the system package manager (dnf/apt/pacman/zypper), counts
 installed packages, checks for available updates, finds orphaned
 packages, and lists recently installed packages.
 
+=head1 AUTHOR
+
+James Temple <james@amiga-fan.net>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (c) 2026 Honey Badger Universe
+
+MIT License
+
 =cut

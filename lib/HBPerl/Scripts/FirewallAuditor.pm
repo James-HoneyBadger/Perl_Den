@@ -185,4 +185,14 @@ HBPerl::Scripts::FirewallAuditor - Dump and analyze firewall rules
 Collects iptables/nftables rules, detects the active firewall, and
 identifies listening ports that lack explicit firewall rules.
 
+=head1 AUTHOR
+
+James Temple <james@amiga-fan.net>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (c) 2026 Honey Badger Universe
+
+MIT License
+
 =cut

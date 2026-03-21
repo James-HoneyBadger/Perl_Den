@@ -6,7 +6,7 @@ WriteMakefile(
     NAME         => 'HBPerl',
     VERSION_FROM => 'lib/HBPerl/App.pm',
     ABSTRACT     => 'HB Perl IDE - Linux Sysadmin Toolkit & Perl Development Environment',
-    AUTHOR       => 'James',
+    AUTHOR       => 'James Temple <james@amiga-fan.net>',
     LICENSE      => 'mit',
     EXE_FILES    => [
         'bin/hb_perl_ide',
@@ -38,10 +38,10 @@ WriteMakefile(
     META_MERGE => {
         'meta-spec' => { version => 2 },
         resources   => {
-            homepage   => 'https://github.com/james/HB_Perl',
+            homepage   => 'https://github.com/James-HoneyBadger/HB_Perl',
             repository => {
                 type => 'git',
-                url  => 'https://github.com/james/HB_Perl.git',
+                url  => 'https://github.com/James-HoneyBadger/HB_Perl.git',
             },
         },
     },

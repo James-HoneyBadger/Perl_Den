@@ -202,4 +202,14 @@ HBPerl::Scripts::SystemdAnalyzer - Systemd boot time and unit analysis
 Uses C<systemd-analyze> and C<systemctl> to report boot times, identify
 the slowest-starting units, list failed units, and show active timers.
 
+=head1 AUTHOR
+
+James Temple <james@amiga-fan.net>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (c) 2026 Honey Badger Universe
+
+MIT License
+
 =cut

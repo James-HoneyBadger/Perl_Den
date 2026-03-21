@@ -80,6 +80,6 @@ Processes the given data and returns the result.
 
 =head1 AUTHOR
 
-Your Name
+James Temple <james@amiga-fan.net>
 
 =cut

@@ -55,7 +55,7 @@ VS Code-inspired dark and light themes applied via CSS to the entire GTK3 UI.
 
 ```bash
 # Clone the repository
-git clone https://github.com/james/HB_Perl.git
+git clone https://github.com/James-HoneyBadger/HB_Perl.git
 cd HB_Perl
 
 # Install system dependencies (Arch Linux)
@@ -179,4 +179,6 @@ MIT License — see [LICENSE](LICENSE).
 
 ## Author
 
-James — [https://github.com/james/HB_Perl](https://github.com/james/HB_Perl)
+James Temple — james@amiga-fan.net
+
+© 2026 Honey Badger Universe — [https://github.com/James-HoneyBadger/HB_Perl](https://github.com/James-HoneyBadger/HB_Perl)

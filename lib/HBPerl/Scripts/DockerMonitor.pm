@@ -184,4 +184,14 @@ HBPerl::Scripts::DockerMonitor - Docker container and image monitoring
 Reports on Docker containers (running/stopped), images, dangling images,
 volumes, and disk usage summary.
 
+=head1 AUTHOR
+
+James Temple <james@amiga-fan.net>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (c) 2026 Honey Badger Universe
+
+MIT License
+
 =cut

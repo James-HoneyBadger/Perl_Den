@@ -18,11 +18,11 @@ sub show_about {
     $dialog->set_program_name('HB Perl IDE');
     $dialog->set_version($HBPerl::App::VERSION // '1.00');
     $dialog->set_comments("Linux Sysadmin Toolkit & Perl Development Environment\n\nA professional IDE for writing, running, and managing\nPerl scripts for Linux system administration.");
-    $dialog->set_copyright("© 2026 James");
+    $dialog->set_copyright("© 2026 Honey Badger Universe");
     $dialog->set_license_type('mit-x11');
-    $dialog->set_website('https://github.com/james/HB_Perl');
+    $dialog->set_website('https://github.com/James-HoneyBadger/HB_Perl');
     $dialog->set_website_label('GitHub Repository');
-    $dialog->set_authors(['James']);
+    $dialog->set_authors(['James Temple <james@amiga-fan.net>']);
     $dialog->run;
     $dialog->destroy;
 }
@@ -493,10 +493,12 @@ rendered via C<pod2text>.
 
 =head1 AUTHOR
 
-James
+James Temple <james@amiga-fan.net>
 
-=head1 LICENSE
+=head1 COPYRIGHT AND LICENSE
 
-MIT
+Copyright (c) 2026 Honey Badger Universe
+
+MIT License
 
 =cut

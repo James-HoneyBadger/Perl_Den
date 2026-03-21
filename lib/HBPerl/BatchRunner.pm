@@ -137,4 +137,14 @@ Runs multiple HBPerl toolkit scripts by name, collecting results and
 producing an aggregated report. Scripts are resolved via
 L<HBPerl::ScriptRegistry/find_script>.
 
+=head1 AUTHOR
+
+James Temple <james@amiga-fan.net>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (c) 2026 Honey Badger Universe
+
+MIT License
+
 =cut
