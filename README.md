@@ -4,7 +4,7 @@
 
 HB Perl is an integrated development environment for writing, running, and
 managing Perl scripts on Linux — with a focus on system administration.  It
-bundles 15 ready-to-run sysadmin scripts, a GTK3 code editor, an embedded
+bundles 20 ready-to-run sysadmin scripts, a GTK3 code editor, an embedded
 terminal, a live system dashboard, 12 Perl tutorials, and a library of
 script templates.
 
@@ -24,15 +24,16 @@ Three interfaces are provided:
 - Syntax checking (`perl -c`), code formatting (Perl::Tidy), linting (Perl::Critic)
 - POD preview, auto-indent, configurable font and colour scheme
 
-### Toolkit Scripts (15)
-| Category          | Scripts                                         |
-|-------------------|-------------------------------------------------|
-| System Info       | SystemInfo, DiskUsage, ProcessManager, ServiceMonitor |
-| Log Analysis      | LogAnalyzer, FailedLoginDetector                |
-| User Management   | UserAudit, CronManager                          |
-| Network           | NetworkDiag, PortScanner, SSLChecker            |
-| Security          | FilePermissions                                 |
-| Backup & Config   | BackupManager, ConfigDiff, DuplicateFinder      |
+### Toolkit Scripts (20)
+| Category          | Scripts                                                     |
+|-------------------|-------------------------------------------------------------|
+| System Info       | SystemInfo, DiskUsage, ProcessManager, ServiceMonitor, PackageAuditor, SystemdAnalyzer |
+| Log Analysis      | LogAnalyzer, FailedLoginDetector                            |
+| User Management   | UserAudit, CronManager                                      |
+| Network           | NetworkDiag, PortScanner, SSLChecker, BandwidthMonitor      |
+| Security          | FilePermissions, FirewallAuditor                            |
+| Containers        | DockerMonitor                                               |
+| Backup & Config   | BackupManager, ConfigDiff, DuplicateFinder                  |
 
 Every script has a Perl module (`lib/HBPerl/Scripts/`) with a uniform
 `run(%args)` → `\%result` and `format_report(\%result)` → `$string` API,
@@ -43,11 +44,11 @@ Real-time system overview: hostname, kernel, uptime, load average, CPU,
 memory, swap, disk usage, and top processes — auto-refreshing every 5 s.
 
 ### Templates & Tutorials
-- 7 script templates (CLI, file processor, log parser, OOP module, sysadmin, test suite, web client)
+- 8 script templates (CLI, file processor, log parser, OOP module, HBPerl module, sysadmin, test suite, web client)
 - 12 progressive Perl tutorials covering fundamentals through security hardening
 
 ### Themes
-VS Code-inspired dark and light themes applied via CSS to the entire GTK3 UI.
+5 GTK CSS themes: dark, light, high-contrast, VS Code dark, and VS Code light.
 
 ---
 
@@ -113,7 +114,9 @@ HB_Perl/
 │   └── hb_perl_ide              #   GTK3 IDE launcher
 ├── lib/HBPerl/                  # Perl modules
 │   ├── App.pm                   #   GUI application controller
+│   ├── BatchRunner.pm           #   Batch/parallel script execution
 │   ├── Config.pm                #   YAML-based preferences & session
+│   ├── Git.pm                   #   Git repository status with caching
 │   ├── Runner.pm                #   Non-blocking script execution
 │   ├── ScriptRegistry.pm        #   Canonical script index
 │   ├── Util.pm                  #   Shared utilities
@@ -125,23 +128,27 @@ HB_Perl/
 │   │   ├── ScriptBrowser.pm     #     Sidebar script tree
 │   │   ├── Dashboard.pm         #     Live system overview
 │   │   └── Dialogs.pm           #     Preferences, About, etc.
-│   └── Scripts/                 #   Sysadmin tool modules (15)
+│   └── Scripts/                 #   Sysadmin tool modules (20)
 ├── scripts/                     # Standalone .pl script runners
 ├── share/
-│   ├── icons/                   # Application icons
-│   ├── templates/               # New-file templates (7)
-│   ├── themes/                  # GTK CSS themes
+│   ├── icons/                   # Application icons (SVG + PNG)
+│   ├── templates/               # New-file templates (8)
+│   ├── themes/                  # GTK CSS themes (5)
 │   └── tutorials/               # Perl tutorials (12 POD files)
-├── t/                           # Test suite (24 files, 170 tests)
+├── t/                           # Test suite (35 files, 299 tests)
+│   ├── unit/                    #   Unit tests
+│   ├── integration/             #   Integration tests
+│   └── fixtures/                #   Test data files
 ├── docs/
-│   └── ENVIRONMENT.md           # Full environment specification
+│   ├── ENVIRONMENT.md           # Full environment specification
+│   └── CUSTOM_SCRIPTS.md        # Guide for writing custom scripts
 ├── hb_gui                       # Shell wrapper → bin/hb_perl_ide
 ├── hb_cli                       # Shell wrapper → bin/hb_perl_cli
 ├── hb_tui                       # Shell wrapper → bin/hb_perl_tui
 ├── hb_perl                      # Shell wrapper → bin/hb_perl_cli (alias)
 ├── _hb_env.sh                   # Environment bootstrap (PATH, PERL5LIB)
 ├── install_hb_perl_command.sh   # Install/uninstall shell commands
-├── examples/                    # Example scripts
+├── .github/workflows/test.yml   # CI test workflow
 ├── cpanfile                     # CPAN dependency declaration
 ├── Makefile.PL                  # ExtUtils::MakeMaker build
 └── LICENSE                      # MIT License
@@ -163,11 +170,12 @@ with exact versions and distro-specific install commands.
 ## Running Tests
 
 ```bash
-prove -l t/ t/unit/
+prove -l t/ t/unit/ t/integration/
 ```
 
-24 test files covering all 15 script modules, configuration, utilities,
-the script registry, and the execution runner (170 tests).
+35 test files covering all 20 script modules, configuration, utilities,
+the script registry, batch runner, git integration, and the execution
+runner (299 tests).
 
 ---
 

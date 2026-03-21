@@ -236,7 +236,7 @@ The toolkit scripts shell out to these Linux commands. All must be on `$PATH`.
 | `ip`           | `iproute2`      | NetworkDiag, SystemInfo              |
 | `ss`           | `iproute2`      | PortScanner                          |
 | `ping`         | `iputils`       | NetworkDiag                          |
-| `systemctl`    | `systemd`       | ServiceMonitor, CronManager          |
+| `systemctl`    | `systemd`       | ServiceMonitor, CronManager, SystemdAnalyzer |
 | `journalctl`   | `systemd`       | FailedLoginDetector, LogAnalyzer     |
 | `openssl`      | `openssl`       | SSLChecker (local cert scanning)     |
 | `crontab`      | `cronie`        | CronManager                          |
@@ -250,6 +250,12 @@ The toolkit scripts shell out to these Linux commands. All must be on `$PATH`.
 | `fail2ban-client`  | `fail2ban`      | FailedLoginDetector (ban status) |
 | `resolvectl`       | `systemd`       | NetworkDiag (DNS server fallback)|
 | `last`             | `util-linux`    | UserAudit (login history)        |
+| `docker`           | `docker`        | DockerMonitor (container status) |
+| `nft`              | `nftables`      | FirewallAuditor (nftables rules) |
+| `iptables`         | `iptables`      | FirewallAuditor (iptables rules) |
+| `systemd-analyze`  | `systemd`       | SystemdAnalyzer (boot analysis)  |
+| `rpm` / `dpkg` / `pacman` | (distro) | PackageAuditor (package listing) |
+| `dnf` / `apt` / `pacman`  | (distro) | PackageAuditor (update checking) |
 
 ---
 
@@ -262,19 +268,26 @@ HB_Perl/                     # Project root ($HB_ROOT_DIR)
 ├── bin/                     # Perl entry points (hb_perl_cli, hb_perl_tui, hb_perl_ide)
 ├── lib/HBPerl/              # Perl modules
 │   ├── App.pm               # GUI application controller
+│   ├── BatchRunner.pm       # Batch/parallel script execution
 │   ├── Config.pm            # YAML-based config persistence
+│   ├── Git.pm               # Git repository status with caching
 │   ├── Runner.pm            # Non-blocking script execution
 │   ├── ScriptRegistry.pm    # Canonical script index
 │   ├── Util.pm              # Shared utilities
 │   ├── GUI/                 # GTK3 GUI modules
-│   └── Scripts/             # Sysadmin tool modules
+│   └── Scripts/             # Sysadmin tool modules (20)
 ├── scripts/                 # Standalone .pl scripts
 ├── share/
-│   ├── icons/               # Application icons (placeholder, currently empty)
-│   ├── templates/           # New-file templates
-│   ├── themes/              # GTK CSS themes (dark, light, vscode-dark, vscode-light)
+│   ├── icons/               # Application icons (SVG + PNG)
+│   ├── templates/           # New-file templates (8)
+│   ├── themes/              # GTK CSS themes (5: dark, light, high-contrast, vscode-dark, vscode-light)
 │   └── tutorials/           # 12 Perl tutorial POD files
-├── t/                       # Test suite
+├── t/                       # Test suite (35 files, 299 tests)
+│   ├── unit/                # Unit tests
+│   ├── integration/         # Integration tests
+│   └── fixtures/            # Test data files
+├── docs/                    # Documentation
+├── .github/workflows/       # CI configuration
 ├── _hb_env.sh               # Environment bootstrap
 ├── cpanfile                  # CPAN dependency declaration
 └── Makefile.PL               # Build system
