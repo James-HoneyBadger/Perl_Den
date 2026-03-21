@@ -33,6 +33,7 @@ WriteMakefile(
         'Test::Exception'  => '0.43',
         'Test::MockModule' => '0.177',
         'Test::Pod'        => '1.52',
+        'Devel::Cover'     => '1.36',
     },
     META_MERGE => {
         'meta-spec' => { version => 2 },
@@ -46,3 +47,15 @@ WriteMakefile(
     },
     test => { TESTS => 't/*.t t/unit/*.t t/integration/*.t' },
 );
+
+# ── Coverage target: `make cover` ──
+sub MY::postamble {
+    return <<'MAKE';
+cover :: pure_all
+	$(NOECHO) cover -delete
+	HARNESS_PERL_SWITCHES=-MDevel::Cover $(MAKE) test
+	cover -report html -report text
+	$(NOECHO) $(ECHO) "Coverage report: cover_db/coverage.html"
+
+MAKE
+}

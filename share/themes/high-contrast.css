@@ -1,23 +1,23 @@
-/* HB Perl IDE - Dark Theme (VS Code Dark+ inspired) */
-@define-color bg_color #1e1e1e;
-@define-color surface_color #252526;
-@define-color overlay_color #2d2d30;
-@define-color fg_color #d4d4d4;
-@define-color subtext_color #9da5b4;
-@define-color border_color #3e3e42;
-@define-color accent_color #3794ff;
-@define-color accent_hover #4ea1ff;
-@define-color success_color #89d185;
-@define-color warning_color #cca700;
-@define-color error_color #f14c4c;
-@define-color selected_bg #04395e;
-@define-color selected_fg #d4d4d4;
-@define-color tab_active #1e1e1e;
-@define-color tab_inactive #252526;
-@define-color toolbar_bg #252526;
-@define-color header_bg #252526;
-@define-color sidebar_bg #252526;
-@define-color panel_bg #1e1e1e;
+/* HB Perl IDE - High Contrast Theme (WCAG AAA accessibility) */
+@define-color bg_color #000000;
+@define-color surface_color #0a0a0a;
+@define-color overlay_color #1a1a1a;
+@define-color fg_color #ffffff;
+@define-color subtext_color #cccccc;
+@define-color border_color #6fc3df;
+@define-color accent_color #ffff00;
+@define-color accent_hover #ffff66;
+@define-color success_color #00ff00;
+@define-color warning_color #ffaa00;
+@define-color error_color #ff3333;
+@define-color selected_bg #264f78;
+@define-color selected_fg #ffffff;
+@define-color tab_active #000000;
+@define-color tab_inactive #0a0a0a;
+@define-color toolbar_bg #0a0a0a;
+@define-color header_bg #0a0a0a;
+@define-color sidebar_bg #0a0a0a;
+@define-color panel_bg #000000;
 
 /* ── Window ── */
 window, .background {
@@ -29,7 +29,7 @@ window, .background {
 headerbar, .titlebar {
     background-color: @header_bg;
     color: @fg_color;
-    border-bottom: 1px solid @border_color;
+    border-bottom: 2px solid @border_color;
     padding: 2px 8px;
     min-height: 38px;
 }
@@ -47,7 +47,7 @@ headerbar .subtitle {
 menubar {
     background-color: @header_bg;
     color: @fg_color;
-    border-bottom: 1px solid @border_color;
+    border-bottom: 2px solid @border_color;
     padding: 1px 0;
     background-image: none;
     box-shadow: none;
@@ -76,11 +76,11 @@ menu, .menu,
     background-color: @surface_color;
     background-image: none;
     color: @fg_color;
-    border: 1px solid @border_color;
-    border-radius: 8px;
+    border: 2px solid @border_color;
+    border-radius: 4px;
     border-image: none;
     padding: 4px 0;
-    box-shadow: 0 3px 12px alpha(#000000, 0.25);
+    box-shadow: none;
     text-shadow: none;
 }
 menu menuitem,
@@ -102,12 +102,12 @@ menu > menuitem:hover,
 menu > menuitem:active,
 .menu > menuitem:hover,
 .menu > menuitem:active {
-    background-color: @overlay_color;
+    background-color: @selected_bg;
     background-image: none;
     color: @accent_color;
     text-shadow: none;
     box-shadow: none;
-    border-radius: 4px;
+    border-radius: 0;
 }
 menu menuitem:disabled,
 .menu > menuitem:disabled {
@@ -142,7 +142,7 @@ menuitem separator {
     background-color: @border_color;
     background-image: none;
     border-image: none;
-    min-height: 1px;
+    min-height: 2px;
     margin: 4px 8px;
 }
 menu button,
@@ -172,13 +172,13 @@ menu > arrow:hover,
 /* ── Toolbar ── */
 toolbar {
     background-color: @toolbar_bg;
-    border-bottom: 1px solid @border_color;
+    border-bottom: 2px solid @border_color;
     padding: 2px 4px;
 }
 toolbar button {
     background: transparent;
     color: @fg_color;
-    border: none;
+    border: 1px solid transparent;
     border-radius: 4px;
     padding: 4px 8px;
     margin: 1px;
@@ -188,13 +188,14 @@ toolbar button {
 toolbar button:hover {
     background-color: @overlay_color;
     color: @accent_color;
+    border-color: @accent_color;
 }
 toolbar button:active {
     background-color: @selected_bg;
 }
 toolbar separator {
     background-color: @border_color;
-    min-width: 1px;
+    min-width: 2px;
     margin: 4px 4px;
 }
 
@@ -202,36 +203,41 @@ toolbar separator {
 button {
     background-color: @overlay_color;
     color: @fg_color;
-    border: 1px solid @border_color;
-    border-radius: 6px;
+    border: 2px solid @border_color;
+    border-radius: 4px;
     padding: 4px 12px;
     min-height: 24px;
     transition: 200ms ease;
 }
 button:hover {
-    background-color: shade(@overlay_color, 1.2);
+    background-color: shade(@overlay_color, 1.3);
     border-color: @accent_color;
     color: @accent_color;
 }
 button:active, button:checked {
     background-color: @accent_color;
-    color: @surface_color;
+    color: @bg_color;
 }
 button.flat {
     background: transparent;
-    border: none;
+    border: 1px solid transparent;
 }
 button.flat:hover {
     background-color: @overlay_color;
+    border-color: @accent_color;
+}
+button:focus {
+    outline: 2px solid @accent_color;
+    outline-offset: 2px;
 }
 button.destructive-action {
     background-color: @error_color;
-    color: @surface_color;
+    color: @bg_color;
     border-color: @error_color;
 }
 button.suggested-action {
     background-color: @accent_color;
-    color: @surface_color;
+    color: @bg_color;
     border-color: @accent_color;
 }
 
@@ -241,7 +247,7 @@ notebook {
 }
 notebook header {
     background-color: @surface_color;
-    border-bottom: 1px solid @border_color;
+    border-bottom: 2px solid @border_color;
 }
 notebook header tabs {
     background-color: transparent;
@@ -250,14 +256,14 @@ notebook tab {
     background-color: @tab_inactive;
     color: @subtext_color;
     padding: 4px 8px;
-    border: none;
-    border-bottom: 2px solid transparent;
+    border: 1px solid @border_color;
+    border-bottom: 3px solid transparent;
     min-height: 28px;
 }
 notebook tab:checked {
     background-color: @tab_active;
-    color: @fg_color;
-    border-bottom: 2px solid @accent_color;
+    color: @accent_color;
+    border-bottom: 3px solid @accent_color;
 }
 notebook tab:hover:not(:checked) {
     background-color: @overlay_color;
@@ -275,7 +281,7 @@ notebook tab button {
 }
 notebook tab button:hover {
     background-color: @error_color;
-    color: @surface_color;
+    color: @bg_color;
 }
 
 /* ── Text Views & Source View ── */
@@ -289,14 +295,14 @@ textview, textview text {
 entry {
     background-color: @surface_color;
     color: @fg_color;
-    border: 1px solid @border_color;
-    border-radius: 6px;
+    border: 2px solid @border_color;
+    border-radius: 4px;
     padding: 6px 10px;
     min-height: 20px;
 }
 entry:focus {
     border-color: @accent_color;
-    box-shadow: 0 0 0 1px alpha(@accent_color, 0.3);
+    box-shadow: 0 0 0 2px alpha(@accent_color, 0.5);
 }
 
 /* ── TreeView (Sidebar) ── */
@@ -309,7 +315,7 @@ treeview, treeview.view {
 treeview.sidebar-tree {
     background-color: @sidebar_bg;
     font-family: "Adwaita Sans", "DejaVu Sans", sans-serif;
-    font-size: 11px;
+    font-size: 12px;
     padding: 2px 0;
 }
 treeview.sidebar-tree row {
@@ -319,20 +325,21 @@ treeview.sidebar-tree row {
 treeview:selected, treeview.view:selected,
 treeview.sidebar-tree:selected {
     background-color: @selected_bg;
-    color: @fg_color;
+    color: @accent_color;
     border-radius: 4px;
+    outline: 2px solid @accent_color;
 }
 treeview:hover,
 treeview.sidebar-tree row:hover {
-    background-color: alpha(@overlay_color, 0.6);
+    background-color: alpha(@overlay_color, 0.8);
     border-radius: 4px;
 }
 
 /* ── Paned (Splitter) ── */
 paned > separator {
     background-color: @border_color;
-    min-width: 6px;
-    min-height: 6px;
+    min-width: 8px;
+    min-height: 8px;
     transition: background-color 200ms ease;
 }
 paned > separator:hover {
@@ -344,14 +351,14 @@ scrollbar {
     background-color: transparent;
 }
 scrollbar slider {
-    background-color: @overlay_color;
+    background-color: @border_color;
     border-radius: 99px;
-    min-width: 6px;
-    min-height: 6px;
+    min-width: 8px;
+    min-height: 8px;
 }
 scrollbar slider:hover {
-    background-color: @subtext_color;
-    min-width: 10px;
+    background-color: @accent_color;
+    min-width: 12px;
 }
 scrollbar slider:active {
     background-color: @accent_color;
@@ -365,7 +372,8 @@ scrolledwindow {
 /* ── Frame ── */
 frame > border {
     border-color: @border_color;
-    border-radius: 6px;
+    border-radius: 4px;
+    border-width: 2px;
 }
 
 /* ── Labels ── */
@@ -392,13 +400,13 @@ label.dim-label {
 .statusbar, statusbar {
     background-color: @panel_bg;
     color: @subtext_color;
-    border-top: 1px solid @border_color;
+    border-top: 2px solid @border_color;
     padding: 2px 12px;
-    font-size: 11px;
+    font-size: 12px;
 }
 .statusbar label {
     color: @subtext_color;
-    font-size: 11px;
+    font-size: 12px;
 }
 
 /* ── Dialog ── */
@@ -413,10 +421,10 @@ dialog headerbar {
 tooltip, tooltip.background {
     background-color: @surface_color;
     color: @fg_color;
-    border: 1px solid @border_color;
-    border-radius: 6px;
+    border: 2px solid @border_color;
+    border-radius: 4px;
     padding: 6px 10px;
-    box-shadow: 0 3px 12px alpha(#000000, 0.25);
+    box-shadow: none;
 }
 
 /* ── InfoBar ── */
@@ -424,46 +432,48 @@ infobar {
     border-radius: 0;
 }
 infobar.info {
-    background-color: alpha(@accent_color, 0.15);
+    background-color: alpha(@accent_color, 0.2);
     color: @accent_color;
 }
 infobar.warning {
-    background-color: alpha(@warning_color, 0.15);
+    background-color: alpha(@warning_color, 0.2);
     color: @warning_color;
 }
 infobar.error {
-    background-color: alpha(@error_color, 0.15);
+    background-color: alpha(@error_color, 0.2);
     color: @error_color;
 }
 
 /* ── SpinButton ── */
 spinbutton {
-    background-color: @entry_bg;
+    background-color: @surface_color;
     color: @fg_color;
-    border: 1px solid @border_color;
-    border-radius: 6px;
+    border: 2px solid @border_color;
+    border-radius: 4px;
 }
 spinbutton button {
     background-color: @surface_color;
     color: @fg_color;
     border: none;
-    border-radius: 6px;
+    border-radius: 4px;
 }
 spinbutton button:hover {
-    background-color: @hover_bg;
+    background-color: @overlay_color;
+    color: @accent_color;
 }
 
 /* ── ComboBox ── */
 combobox button.combo {
-    background-color: @entry_bg;
+    background-color: @surface_color;
     color: @fg_color;
-    border: 1px solid @border_color;
-    border-radius: 6px;
+    border: 2px solid @border_color;
+    border-radius: 4px;
     padding: 4px 8px;
     background-image: none;
 }
 combobox button.combo:hover {
-    background-color: @hover_bg;
+    background-color: @overlay_color;
+    border-color: @accent_color;
 }
 
 /* ── CheckButton / RadioButton ── */
@@ -473,56 +483,59 @@ radiobutton {
 }
 checkbutton check,
 radiobutton radio {
-    background-color: @entry_bg;
-    border: 1px solid @border_color;
+    background-color: @surface_color;
+    border: 2px solid @border_color;
     border-radius: 4px;
-    min-width: 16px;
-    min-height: 16px;
+    min-width: 18px;
+    min-height: 18px;
 }
 checkbutton check:checked,
 radiobutton radio:checked {
     background-color: @accent_color;
     color: @bg_color;
+    border-color: @accent_color;
 }
 
 /* ── FontButton ── */
 fontbutton button {
-    background-color: @entry_bg;
+    background-color: @surface_color;
     color: @fg_color;
-    border: 1px solid @border_color;
-    border-radius: 6px;
+    border: 2px solid @border_color;
+    border-radius: 4px;
     padding: 4px 8px;
     background-image: none;
 }
 fontbutton button:hover {
-    background-color: @hover_bg;
+    background-color: @overlay_color;
+    border-color: @accent_color;
 }
 
 /* ── ProgressBar ── */
 progressbar trough {
     background-color: @surface_color;
-    border: 1px solid @border_color;
+    border: 2px solid @border_color;
     border-radius: 4px;
-    min-height: 8px;
+    min-height: 10px;
 }
 progressbar progress {
     background-color: @accent_color;
     border-radius: 4px;
-    min-height: 8px;
+    min-height: 10px;
 }
 progressbar text {
     color: @fg_color;
-    font-size: 10px;
+    font-size: 11px;
+    font-weight: bold;
 }
 
 /* ── Custom classes ── */
 .sidebar-header {
     background-color: @surface_color;
     padding: 8px 12px;
-    border-bottom: 1px solid @border_color;
+    border-bottom: 2px solid @border_color;
     font-family: "Adwaita Sans", "DejaVu Sans", "Droid Sans", sans-serif;
     font-weight: bold;
-    font-size: 11px;
+    font-size: 12px;
     letter-spacing: 1px;
     color: @accent_color;
 }
@@ -534,8 +547,8 @@ progressbar text {
 
 .dashboard-card {
     background-color: @surface_color;
-    border: 1px solid @border_color;
-    border-radius: 8px;
+    border: 2px solid @border_color;
+    border-radius: 4px;
     padding: 12px;
     margin: 4px;
 }
@@ -547,18 +560,18 @@ progressbar text {
 }
 
 .dashboard-label {
-    font-size: 11px;
+    font-size: 12px;
     color: @subtext_color;
 }
 
 .output-panel {
     background-color: @panel_bg;
     font-family: "Noto Sans Mono", "Adwaita Mono", "DejaVu Sans Mono", monospace;
-    font-size: 11px;
+    font-size: 12px;
 }
 
 .search-bar {
     background-color: @surface_color;
-    border-bottom: 1px solid @border_color;
+    border-bottom: 2px solid @border_color;
     padding: 4px 8px;
 }

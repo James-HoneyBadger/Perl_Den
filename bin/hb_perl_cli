@@ -17,7 +17,7 @@ my $PROGRAM     = $ENV{HB_LAUNCH_NAME} || basename($0);
 my $command = shift @ARGV // 'help';
 
 # Allow shorthand invocation: `hb_cli system_info`
-if ($command !~ /^(?:help|--help|-h|list|run|ide)$/) {
+if ($command !~ /^(?:help|--help|-h|list|run|batch|ide)$/) {
     unshift @ARGV, $command;
     $command = 'run';
 }
@@ -48,6 +48,36 @@ if ($command eq 'run') {
 
     exec $^X, $script_path, @ARGV;
     die "Failed to execute $script_path: $!";
+}
+
+if ($command eq 'batch') {
+    my $names_arg = shift @ARGV;
+    if (!$names_arg) {
+        warn "Usage: $PROGRAM batch <script1,script2,...>\n";
+        warn "Example: $PROGRAM batch system_info,disk_usage,config_diff\n";
+        exit 2;
+    }
+    my @names = split /,/, $names_arg;
+    @names = grep { length } @names;
+    if (!@names) {
+        warn "No valid script names given.\n";
+        exit 2;
+    }
+
+    require HBPerl::BatchRunner;
+    my $runner = HBPerl::BatchRunner->new(
+        on_progress => sub {
+            my ($name, $i, $total) = @_;
+            printf STDERR "  [%d/%d] Running %s ...\n", $i, $total, $name;
+        },
+        on_error => sub {
+            my ($name, $err) = @_;
+            warn "  ERROR in $name: $err\n";
+        },
+    );
+    my $results = $runner->run_batch(@names);
+    print $runner->format_batch_report($results);
+    exit 0;
 }
 
 if ($command eq 'ide') {
@@ -86,6 +116,7 @@ sub _list_scripts {
     print "\nExamples:\n";
     print "  $PROGRAM run system_info\n";
     print "  $PROGRAM run port_scanner -- --host 127.0.0.1\n";
+    print "  $PROGRAM batch system_info,disk_usage,config_diff\n";
     print "  $PROGRAM ide\n";
 }
 
@@ -100,6 +131,10 @@ Usage:
   $PROGRAM run <script_name> [-- <script_args...>]
       Run a toolkit script by name.
       Name accepts underscore or hyphen style, with or without .pl.
+
+  $PROGRAM batch <script1,script2,...>
+      Run multiple scripts sequentially and aggregate reports.
+      Names are comma-separated (no spaces).
 
   $PROGRAM ide
       Launch the GTK IDE.
@@ -119,6 +154,7 @@ hb_perl_cli - Command-line interface for the HB Perl toolkit
 
     hb_perl_cli list
     hb_perl_cli run <script_name> [-- <args>]
+    hb_perl_cli batch <script1,script2,...>
     hb_perl_cli ide
     hb_perl_cli help
 
@@ -142,6 +178,11 @@ Print a table of all available toolkit scripts.
 
 Execute a toolkit script by name.  Any arguments after C<--> are
 passed to the script.
+
+=item B<batch E<lt>script1,script2,...E<gt>>
+
+Run multiple scripts sequentially using their module C<run()> functions
+and print an aggregated report.  Names are comma-separated.
 
 =item B<ide>
 

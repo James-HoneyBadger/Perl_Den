@@ -31,5 +31,6 @@ on 'test' => sub {
     requires 'Test::Exception',        '0.43';
     requires 'Test::MockModule',       '0.177';
     requires 'Test::Pod',              '1.52';
+    requires 'Devel::Cover',           '1.36';
     requires 'File::Temp';                          # core
 };
