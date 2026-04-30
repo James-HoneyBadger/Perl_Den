@@ -8,7 +8,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Getopt::Long;
-use HBPerl::Scripts::CronManager;
+use BadgerOps::Scripts::CronManager;
 
 my $user;
 my $help;
@@ -24,7 +24,7 @@ if ($help) {
     exit 0;
 }
 
-my $result = HBPerl::Scripts::CronManager::run(
+my $result = BadgerOps::Scripts::CronManager::run(
     user => $user,
 );
-print HBPerl::Scripts::CronManager::format_report($result);
+print BadgerOps::Scripts::CronManager::format_report($result);

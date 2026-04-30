@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # ============================================================================
-# t/10_duplicate_finder.t — Test HBPerl::Scripts::DuplicateFinder
+# t/10_duplicate_finder.t — Test BadgerOps::Scripts::DuplicateFinder
 # ============================================================================
 use strict;
 use warnings;
@@ -9,7 +9,7 @@ use FindBin;
 use lib "$FindBin::Bin/../lib";
 use File::Temp qw(tempdir);
 
-use_ok('HBPerl::Scripts::DuplicateFinder');
+use_ok('BadgerOps::Scripts::DuplicateFinder');
 
 subtest 'finds duplicates' => sub {
     my $dir = tempdir(CLEANUP => 1);
@@ -25,7 +25,7 @@ subtest 'finds duplicates' => sub {
     print $fh "different content\n";
     close $fh;
 
-    my $result = HBPerl::Scripts::DuplicateFinder::run(
+    my $result = BadgerOps::Scripts::DuplicateFinder::run(
         directory => $dir,
         min_size  => 1,
     );
@@ -44,7 +44,7 @@ subtest 'no duplicates in unique files' => sub {
         close $fh;
     }
 
-    my $r = HBPerl::Scripts::DuplicateFinder::run(directory => $dir, min_size => 1);
+    my $r = BadgerOps::Scripts::DuplicateFinder::run(directory => $dir, min_size => 1);
     is(scalar @{$r->{groups}}, 0, 'no duplicate groups');
     is($r->{wasted_bytes}, 0, 'no wasted bytes');
 };
@@ -55,8 +55,8 @@ subtest 'format_report works' => sub {
     print $fh "data";
     close $fh;
 
-    my $r = HBPerl::Scripts::DuplicateFinder::run(directory => $dir, min_size => 1);
-    my $report = HBPerl::Scripts::DuplicateFinder::format_report($r);
+    my $r = BadgerOps::Scripts::DuplicateFinder::run(directory => $dir, min_size => 1);
+    my $report = BadgerOps::Scripts::DuplicateFinder::format_report($r);
     ok(length($report) > 30, 'report has content');
     like($report, qr/DUPLICATE/i, 'report header present');
 };

@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # ============================================================================
-# t/08_port_scanner.t — Test HBPerl::Scripts::PortScanner
+# t/08_port_scanner.t — Test BadgerOps::Scripts::PortScanner
 # ============================================================================
 use strict;
 use warnings;
@@ -8,10 +8,10 @@ use Test::More;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 
-use_ok('HBPerl::Scripts::PortScanner');
+use_ok('BadgerOps::Scripts::PortScanner');
 
 subtest 'listen mode returns data' => sub {
-    my $result = HBPerl::Scripts::PortScanner::run(mode => 'listen');
+    my $result = BadgerOps::Scripts::PortScanner::run(mode => 'listen');
     ok(ref $result eq 'HASH', 'returns hashref');
     ok(exists $result->{listening}, 'has listening');
     ok(ref $result->{listening} eq 'ARRAY', 'listening is array');
@@ -20,7 +20,7 @@ subtest 'listen mode returns data' => sub {
 };
 
 subtest 'service_map has common ports' => sub {
-    my $r = HBPerl::Scripts::PortScanner::run(mode => 'listen');
+    my $r = BadgerOps::Scripts::PortScanner::run(mode => 'listen');
     my $map = $r->{service_map};
     is($map->{22}, 'SSH', 'port 22 = SSH');
     is($map->{80}, 'HTTP', 'port 80 = HTTP');
@@ -28,8 +28,8 @@ subtest 'service_map has common ports' => sub {
 };
 
 subtest 'format_report works' => sub {
-    my $r = HBPerl::Scripts::PortScanner::run(mode => 'listen');
-    my $report = HBPerl::Scripts::PortScanner::format_report($r);
+    my $r = BadgerOps::Scripts::PortScanner::run(mode => 'listen');
+    my $report = BadgerOps::Scripts::PortScanner::format_report($r);
     ok(length($report) > 50, 'report has content');
     like($report, qr/PORT|CONNECTION/i, 'report has relevant header');
 };

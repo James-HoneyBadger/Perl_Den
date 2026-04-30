@@ -11,7 +11,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Getopt::Long;
-use HBPerl::Scripts::BackupManager;
+use BadgerOps::Scripts::BackupManager;
 
 my $action = 'list';
 my $source;
@@ -42,7 +42,7 @@ if ($help) {
     exit 0;
 }
 
-my $result = HBPerl::Scripts::BackupManager::run(
+my $result = BadgerOps::Scripts::BackupManager::run(
     action => $action,
     source => $source,
     dest   => $dest,
@@ -50,4 +50,4 @@ my $result = HBPerl::Scripts::BackupManager::run(
     prefix => $prefix,
     file   => $file,
 );
-print HBPerl::Scripts::BackupManager::format_report($result);
+print BadgerOps::Scripts::BackupManager::format_report($result);

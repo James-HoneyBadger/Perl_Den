@@ -8,7 +8,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Getopt::Long;
-use HBPerl::Scripts::FailedLoginDetector;
+use BadgerOps::Scripts::FailedLoginDetector;
 
 my $hours     = 24;
 my $threshold = 5;
@@ -26,8 +26,8 @@ if ($help) {
     exit 0;
 }
 
-my $result = HBPerl::Scripts::FailedLoginDetector::run(
+my $result = BadgerOps::Scripts::FailedLoginDetector::run(
     hours     => $hours,
     threshold => $threshold,
 );
-print HBPerl::Scripts::FailedLoginDetector::format_report($result);
+print BadgerOps::Scripts::FailedLoginDetector::format_report($result);

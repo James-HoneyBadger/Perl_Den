@@ -9,25 +9,33 @@ use FindBin;
 use lib "$FindBin::Bin/../lib";
 
 my @modules = qw(
-    HBPerl::Config
-    HBPerl::Util
-    HBPerl::Runner
-    HBPerl::ScriptRegistry
-    HBPerl::Scripts::SystemInfo
-    HBPerl::Scripts::DiskUsage
-    HBPerl::Scripts::ProcessManager
-    HBPerl::Scripts::ServiceMonitor
-    HBPerl::Scripts::FilePermissions
-    HBPerl::Scripts::LogAnalyzer
-    HBPerl::Scripts::UserAudit
-    HBPerl::Scripts::NetworkDiag
-    HBPerl::Scripts::PortScanner
-    HBPerl::Scripts::BackupManager
-    HBPerl::Scripts::DuplicateFinder
-    HBPerl::Scripts::CronManager
-    HBPerl::Scripts::SSLChecker
-    HBPerl::Scripts::ConfigDiff
-    HBPerl::Scripts::FailedLoginDetector
+    BadgerOps::Config
+    BadgerOps::Util
+    BadgerOps::Runner
+    BadgerOps::BatchRunner
+    BadgerOps::ScriptRegistry
+    BadgerOps::Git
+    BadgerOps::Scheduler
+    BadgerOps::Scripts::SystemInfo
+    BadgerOps::Scripts::DiskUsage
+    BadgerOps::Scripts::ProcessManager
+    BadgerOps::Scripts::ServiceMonitor
+    BadgerOps::Scripts::FilePermissions
+    BadgerOps::Scripts::LogAnalyzer
+    BadgerOps::Scripts::UserAudit
+    BadgerOps::Scripts::NetworkDiag
+    BadgerOps::Scripts::PortScanner
+    BadgerOps::Scripts::BackupManager
+    BadgerOps::Scripts::DuplicateFinder
+    BadgerOps::Scripts::CronManager
+    BadgerOps::Scripts::SSLChecker
+    BadgerOps::Scripts::ConfigDiff
+    BadgerOps::Scripts::FailedLoginDetector
+    BadgerOps::Scripts::DockerMonitor
+    BadgerOps::Scripts::BandwidthMonitor
+    BadgerOps::Scripts::FirewallAuditor
+    BadgerOps::Scripts::PackageAuditor
+    BadgerOps::Scripts::SystemdAnalyzer
 );
 
 plan tests => scalar @modules;

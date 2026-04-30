@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use FindBin qw($RealBin);
 use lib "$RealBin/../lib";
-use HBPerl::Scripts::FirewallAuditor;
+use BadgerOps::Scripts::FirewallAuditor;
 
-my $result = HBPerl::Scripts::FirewallAuditor::run();
-print HBPerl::Scripts::FirewallAuditor::format_report($result);
+my $result = BadgerOps::Scripts::FirewallAuditor::run();
+print BadgerOps::Scripts::FirewallAuditor::format_report($result);

@@ -10,22 +10,22 @@ use File::Temp qw(tempdir);
 
 use lib "$RealBin/../../lib";
 
-use_ok('HBPerl::Util');
-use_ok('HBPerl::Git');
+use_ok('BadgerOps::Util');
+use_ok('BadgerOps::Git');
 
 # ============================================================================
 # shell_quote()
 # ============================================================================
 subtest 'shell_quote basics' => sub {
-    is(HBPerl::Util::shell_quote('hello'), "'hello'", 'simple string');
-    is(HBPerl::Util::shell_quote('/usr/bin/perl'), "'/usr/bin/perl'", 'path');
-    is(HBPerl::Util::shell_quote(''), "''", 'empty string');
-    is(HBPerl::Util::shell_quote(undef), "''", 'undef');
+    is(BadgerOps::Util::shell_quote('hello'), "'hello'", 'simple string');
+    is(BadgerOps::Util::shell_quote('/usr/bin/perl'), "'/usr/bin/perl'", 'path');
+    is(BadgerOps::Util::shell_quote(''), "''", 'empty string');
+    is(BadgerOps::Util::shell_quote(undef), "''", 'undef');
 };
 
 subtest 'shell_quote escapes single quotes' => sub {
-    is(HBPerl::Util::shell_quote("it's"), "'it'\\''s'", 'embedded single quote');
-    is(HBPerl::Util::shell_quote("a'b'c"), "'a'\\''b'\\''c'", 'multiple single quotes');
+    is(BadgerOps::Util::shell_quote("it's"), "'it'\\''s'", 'embedded single quote');
+    is(BadgerOps::Util::shell_quote("a'b'c"), "'a'\\''b'\\''c'", 'multiple single quotes');
 };
 
 subtest 'shell_quote neutralises shell metacharacters' => sub {
@@ -39,7 +39,7 @@ subtest 'shell_quote neutralises shell metacharacters' => sub {
         'foo\nbar',
     );
     for my $input (@dangerous) {
-        my $quoted = HBPerl::Util::shell_quote($input);
+        my $quoted = BadgerOps::Util::shell_quote($input);
         # Quoted value should round-trip through echo safely
         my $out = `echo $quoted`;
         chomp $out;
@@ -48,7 +48,7 @@ subtest 'shell_quote neutralises shell metacharacters' => sub {
 };
 
 subtest 'shell_quote handles spaces and special paths' => sub {
-    my $quoted = HBPerl::Util::shell_quote('/home/user/my projects/script.pl');
+    my $quoted = BadgerOps::Util::shell_quote('/home/user/my projects/script.pl');
     my $out = `echo $quoted`;
     chomp $out;
     is($out, '/home/user/my projects/script.pl', 'path with spaces');
@@ -58,7 +58,7 @@ subtest 'shell_quote handles spaces and special paths' => sub {
 # run_command_list()
 # ============================================================================
 subtest 'run_command_list basic' => sub {
-    my ($out, $rc) = HBPerl::Util::run_command_list('echo', 'hello world');
+    my ($out, $rc) = BadgerOps::Util::run_command_list('echo', 'hello world');
     chomp $out;
     is($out, 'hello world', 'captures output');
     is($rc, 0, 'exit code 0');
@@ -66,13 +66,13 @@ subtest 'run_command_list basic' => sub {
 
 subtest 'run_command_list no shell expansion' => sub {
     # $HOME should NOT be expanded when passed as an argument in list form
-    my ($out, $rc) = HBPerl::Util::run_command_list('echo', '$HOME');
+    my ($out, $rc) = BadgerOps::Util::run_command_list('echo', '$HOME');
     chomp $out;
     is($out, '$HOME', 'shell variable not expanded in list form');
 };
 
 subtest 'run_command_list exit code' => sub {
-    my ($out, $rc) = HBPerl::Util::run_command_list('false');
+    my ($out, $rc) = BadgerOps::Util::run_command_list('false');
     isnt($rc, 0, 'non-zero exit code');
 };
 
@@ -82,18 +82,18 @@ subtest 'run_command_list exit code' => sub {
 subtest 'Git _run_git accepts paths with spaces' => sub {
     my $tmpdir = tempdir('git test XXXX', CLEANUP => 1, TMPDIR => 1);
     # Not a git repo, so should fail gracefully (return undef), not die
-    my $result = HBPerl::Git::is_git_repo($tmpdir);
+    my $result = BadgerOps::Git::is_git_repo($tmpdir);
     ok(!$result, 'non-repo with spaces returns false, not crash');
 };
 
 subtest 'Git _run_git rejects undef dir' => sub {
     # is_git_repo() defaults undef to '.', so test _run_git directly
-    my $result = HBPerl::Git::_run_git(undef, 'rev-parse', '--is-inside-work-tree');
+    my $result = BadgerOps::Git::_run_git(undef, 'rev-parse', '--is-inside-work-tree');
     ok(!defined $result, 'undef dir returns undef from _run_git');
 };
 
 subtest 'Git _run_git rejects non-existent dir' => sub {
-    my $result = HBPerl::Git::is_git_repo('/no/such/directory/exists');
+    my $result = BadgerOps::Git::is_git_repo('/no/such/directory/exists');
     ok(!$result, 'non-existent dir returns false');
 };
 
@@ -101,9 +101,9 @@ subtest 'Git _run_git rejects non-existent dir' => sub {
 # BatchRunner module name validation
 # ============================================================================
 subtest 'BatchRunner rejects invalid module names' => sub {
-    use_ok('HBPerl::BatchRunner');
+    use_ok('BadgerOps::BatchRunner');
     my @errors;
-    my $br = HBPerl::BatchRunner->new(
+    my $br = BadgerOps::BatchRunner->new(
         on_error => sub { push @errors, $_[1] },
     );
 

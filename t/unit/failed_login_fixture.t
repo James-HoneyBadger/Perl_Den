@@ -9,7 +9,7 @@ use Test::More;
 use FindBin;
 use lib "$FindBin::Bin/../../lib";
 
-use_ok('HBPerl::Scripts::FailedLoginDetector');
+use_ok('BadgerOps::Scripts::FailedLoginDetector');
 
 my $fixture = "$FindBin::Bin/../fixtures/auth.log";
 plan skip_all => 'auth.log fixture not found' unless -f $fixture;
@@ -20,7 +20,7 @@ my @lines = <$fh>;
 close $fh;
 
 subtest 'parse fixture auth.log' => sub {
-    my @entries = HBPerl::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
+    my @entries = BadgerOps::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
     cmp_ok(scalar @entries, '>=', 8, 'parsed at least 8 entries from fixture');
 
     my @fails     = grep { $_->{type} eq 'fail' }    @entries;
@@ -30,7 +30,7 @@ subtest 'parse fixture auth.log' => sub {
 };
 
 subtest 'fixture IPs are correct' => sub {
-    my @entries = HBPerl::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
+    my @entries = BadgerOps::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
     my %ips;
     for my $e (grep { $_->{type} eq 'fail' } @entries) {
         $ips{$e->{ip}}++ if $e->{ip};
@@ -41,7 +41,7 @@ subtest 'fixture IPs are correct' => sub {
 };
 
 subtest 'fixture users are correct' => sub {
-    my @entries = HBPerl::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
+    my @entries = BadgerOps::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
     my %users;
     for my $e (grep { $_->{type} eq 'fail' } @entries) {
         $users{$e->{user}}++ if $e->{user};
@@ -51,7 +51,7 @@ subtest 'fixture users are correct' => sub {
 };
 
 subtest 'accepted logins parsed from fixture' => sub {
-    my @entries = HBPerl::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
+    my @entries = BadgerOps::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
     my @ok = grep { $_->{type} eq 'success' } @entries;
     my @james = grep { $_->{user} eq 'james' } @ok;
     ok(scalar @james >= 1, 'james has at least 1 accepted login');
@@ -61,7 +61,7 @@ subtest 'accepted logins parsed from fixture' => sub {
 };
 
 subtest 'sudo failure parsed from fixture' => sub {
-    my @entries = HBPerl::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
+    my @entries = BadgerOps::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
     my @sudo = grep { $_->{service} && $_->{service} eq 'sudo' } @entries;
     cmp_ok(scalar @sudo, '>=', 1, 'at least 1 sudo failure');
 };

@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # ============================================================================
-# t/12_config_diff.t — Test HBPerl::Scripts::ConfigDiff
+# t/12_config_diff.t — Test BadgerOps::Scripts::ConfigDiff
 # ============================================================================
 use strict;
 use warnings;
@@ -9,7 +9,7 @@ use FindBin;
 use lib "$FindBin::Bin/../lib";
 use File::Temp qw(tempdir);
 
-use_ok('HBPerl::Scripts::ConfigDiff');
+use_ok('BadgerOps::Scripts::ConfigDiff');
 
 my $base_dir = tempdir(CLEANUP => 1) . "/baselines";
 my $src_dir  = tempdir(CLEANUP => 1);
@@ -25,7 +25,7 @@ for my $name (qw(hosts.conf app.conf)) {
 }
 
 subtest 'create baseline' => sub {
-    my $result = HBPerl::Scripts::ConfigDiff::run(
+    my $result = BadgerOps::Scripts::ConfigDiff::run(
         action   => 'baseline',
         base_dir => $base_dir,
         files    => \@test_files,
@@ -38,7 +38,7 @@ subtest 'create baseline' => sub {
 };
 
 subtest 'status shows unchanged' => sub {
-    my $r = HBPerl::Scripts::ConfigDiff::run(
+    my $r = BadgerOps::Scripts::ConfigDiff::run(
         action   => 'status',
         base_dir => $base_dir,
         files    => \@test_files,
@@ -54,7 +54,7 @@ subtest 'diff detects changes' => sub {
     print $fh "new_key=new_value\n";
     close $fh;
 
-    my $r = HBPerl::Scripts::ConfigDiff::run(
+    my $r = BadgerOps::Scripts::ConfigDiff::run(
         action   => 'diff',
         base_dir => $base_dir,
         files    => \@test_files,
@@ -66,12 +66,12 @@ subtest 'diff detects changes' => sub {
 };
 
 subtest 'format_report works' => sub {
-    my $r = HBPerl::Scripts::ConfigDiff::run(
+    my $r = BadgerOps::Scripts::ConfigDiff::run(
         action   => 'status',
         base_dir => $base_dir,
         files    => \@test_files,
     );
-    my $report = HBPerl::Scripts::ConfigDiff::format_report($r);
+    my $report = BadgerOps::Scripts::ConfigDiff::format_report($r);
     ok(length($report) > 50, 'report has content');
     like($report, qr/CONFIGURATION/i, 'has header');
 };

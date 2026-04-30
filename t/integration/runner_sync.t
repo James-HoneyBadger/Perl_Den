@@ -12,10 +12,10 @@ use lib "$FindBin::Bin/../../lib";
 eval { require Glib };
 plan skip_all => 'Glib not available' if $@;
 
-use_ok('HBPerl::Runner');
+use_ok('BadgerOps::Runner');
 
 subtest 'basic echo' => sub {
-    my ($out, $err, $rc) = HBPerl::Runner->run_sync('echo', 'hello world');
+    my ($out, $err, $rc) = BadgerOps::Runner->run_sync('echo', 'hello world');
     chomp $out;
     is($out, 'hello world', 'captured stdout');
     is($err, '', 'no stderr');
@@ -23,12 +23,12 @@ subtest 'basic echo' => sub {
 };
 
 subtest 'exit code propagation' => sub {
-    my ($out, $err, $rc) = HBPerl::Runner->run_sync('bash', '-c', 'exit 42');
+    my ($out, $err, $rc) = BadgerOps::Runner->run_sync('bash', '-c', 'exit 42');
     is($rc, 42, 'captures non-zero exit code');
 };
 
 subtest 'stderr capture' => sub {
-    my ($out, $err, $rc) = HBPerl::Runner->run_sync('bash', '-c', 'echo ERR >&2');
+    my ($out, $err, $rc) = BadgerOps::Runner->run_sync('bash', '-c', 'echo ERR >&2');
     chomp $err;
     is($err, 'ERR', 'captured stderr');
     is($out, '', 'stdout empty');
@@ -37,7 +37,7 @@ subtest 'stderr capture' => sub {
 subtest 'concurrent stdout and stderr (deadlock prevention)' => sub {
     # Generate >64KB on both streams simultaneously
     my $cmd = 'perl -e "for(1..5000){print STDOUT qq{OUT-line-\$_\\n}; print STDERR qq{ERR-line-\$_\\n}}"';
-    my ($out, $err, $rc) = HBPerl::Runner->run_sync($cmd);
+    my ($out, $err, $rc) = BadgerOps::Runner->run_sync($cmd);
     is($rc, 0, 'exit code 0');
     my @out_lines = split /\n/, $out;
     my @err_lines = split /\n/, $err;
@@ -48,12 +48,12 @@ subtest 'concurrent stdout and stderr (deadlock prevention)' => sub {
 };
 
 subtest 'command not found' => sub {
-    my ($out, $err, $rc) = HBPerl::Runner->run_sync('nonexistent_command_xyz');
+    my ($out, $err, $rc) = BadgerOps::Runner->run_sync('nonexistent_command_xyz');
     isnt($rc, 0, 'non-zero exit code for missing command');
 };
 
 subtest 'timeout kills long-running command' => sub {
-    my ($out, $err, $rc) = HBPerl::Runner->run_sync(
+    my ($out, $err, $rc) = BadgerOps::Runner->run_sync(
         'sleep', '30',
         { timeout => 2 },
     );
@@ -62,7 +62,7 @@ subtest 'timeout kills long-running command' => sub {
 };
 
 subtest 'timeout not triggered for fast command' => sub {
-    my ($out, $err, $rc) = HBPerl::Runner->run_sync(
+    my ($out, $err, $rc) = BadgerOps::Runner->run_sync(
         'echo', 'fast',
         { timeout => 10 },
     );
@@ -72,7 +72,7 @@ subtest 'timeout not triggered for fast command' => sub {
 };
 
 subtest 'single string command (backward compat)' => sub {
-    my ($out, $err, $rc) = HBPerl::Runner->run_sync('echo "hello from bash"');
+    my ($out, $err, $rc) = BadgerOps::Runner->run_sync('echo "hello from bash"');
     chomp $out;
     is($out, 'hello from bash', 'single string routed through bash');
     is($rc, 0, 'exit code 0');

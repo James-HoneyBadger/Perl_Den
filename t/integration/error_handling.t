@@ -20,11 +20,11 @@ subtest 'Config: corrupted YAML file' => sub {
     print $fh "not: [valid: yaml: {broken\n";
     close $fh;
 
-    local $HBPerl::Config::CONFIG_FILE = $cfg_file;
-    local $HBPerl::Config::SESSION_FILE = "$dir/session.yml";
+    local $BadgerOps::Config::CONFIG_FILE = $cfg_file;
+    local $BadgerOps::Config::SESSION_FILE = "$dir/session.yml";
 
-    require HBPerl::Config;
-    eval { HBPerl::Config::load() };
+    require BadgerOps::Config;
+    eval { BadgerOps::Config::load() };
     ok(!$@, 'load() does not die on corrupted YAML') or diag $@;
 };
 
@@ -32,11 +32,11 @@ subtest 'Config: missing config directory' => sub {
     my $dir = tempdir(CLEANUP => 1);
     my $deep = "$dir/nonexistent/nested/config.yml";
 
-    local $HBPerl::Config::CONFIG_FILE = $deep;
-    local $HBPerl::Config::SESSION_FILE = "$dir/session.yml";
+    local $BadgerOps::Config::CONFIG_FILE = $deep;
+    local $BadgerOps::Config::SESSION_FILE = "$dir/session.yml";
 
-    require HBPerl::Config;
-    eval { HBPerl::Config::load() };
+    require BadgerOps::Config;
+    eval { BadgerOps::Config::load() };
     ok(!$@, 'load() creates missing directories') or diag $@;
 };
 
@@ -47,8 +47,8 @@ subtest 'Runner: non-existent command via run_sync' => sub {
         pass('Glib not available, skipping');
         return;
     }
-    require HBPerl::Runner;
-    my ($out, $err, $rc) = HBPerl::Runner->run_sync('totally_nonexistent_cmd_xyz');
+    require BadgerOps::Runner;
+    my ($out, $err, $rc) = BadgerOps::Runner->run_sync('totally_nonexistent_cmd_xyz');
     isnt($rc, 0, 'non-zero exit for missing command');
 };
 
@@ -58,8 +58,8 @@ subtest 'Runner: timeout fires and kills child' => sub {
         pass('Glib not available, skipping');
         return;
     }
-    require HBPerl::Runner;
-    my ($out, $err, $rc) = HBPerl::Runner->run_sync(
+    require BadgerOps::Runner;
+    my ($out, $err, $rc) = BadgerOps::Runner->run_sync(
         'sleep', '60',
         { timeout => 1 },
     );
@@ -69,9 +69,9 @@ subtest 'Runner: timeout fires and kills child' => sub {
 
 # ── BatchRunner: unknown script ──
 subtest 'BatchRunner: unknown script returns error' => sub {
-    require HBPerl::BatchRunner;
+    require BadgerOps::BatchRunner;
     my @errors;
-    my $br = HBPerl::BatchRunner->new(
+    my $br = BadgerOps::BatchRunner->new(
         on_error => sub { push @errors, $_[0] },
     );
     my $results = $br->run_batch('totally_nonexistent_script');
@@ -82,16 +82,16 @@ subtest 'BatchRunner: unknown script returns error' => sub {
 
 # ── BatchRunner: script that dies ──
 subtest 'BatchRunner: script runtime error is caught' => sub {
-    require HBPerl::BatchRunner;
-    require HBPerl::ScriptRegistry;
+    require BadgerOps::BatchRunner;
+    require BadgerOps::ScriptRegistry;
 
     # Temporarily inject a script that dies
     no warnings 'once';
-    local *HBPerl::Scripts::TestDie::run = sub { die "intentional test death" };
-    local *HBPerl::Scripts::TestDie::format_report = sub { "report" };
+    local *BadgerOps::Scripts::TestDie::run = sub { die "intentional test death" };
+    local *BadgerOps::Scripts::TestDie::format_report = sub { "report" };
 
     my @errors;
-    my $br = HBPerl::BatchRunner->new(
+    my $br = BadgerOps::BatchRunner->new(
         on_error => sub { push @errors, $_[0] },
     );
 
@@ -103,14 +103,14 @@ subtest 'BatchRunner: script runtime error is caught' => sub {
 
 # ── Util: slurp_file on missing file ──
 subtest 'Util: slurp_file returns empty for missing file' => sub {
-    require HBPerl::Util;
-    my $content = HBPerl::Util::slurp_file('/nonexistent/file/xyz.txt');
+    require BadgerOps::Util;
+    my $content = BadgerOps::Util::slurp_file('/nonexistent/file/xyz.txt');
     is($content, '', 'returns empty string for missing file');
 };
 
 subtest 'Util: run_command_list with non-existent command' => sub {
-    require HBPerl::Util;
-    my ($out, $rc) = HBPerl::Util::run_command_list('totally_nonexistent_xyz');
+    require BadgerOps::Util;
+    my ($out, $rc) = BadgerOps::Util::run_command_list('totally_nonexistent_xyz');
     ok($rc != 0, 'non-zero return code');
 };
 

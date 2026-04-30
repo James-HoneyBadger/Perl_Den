@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # ============================================================================
-# t/09_backup_manager.t — Test HBPerl::Scripts::BackupManager
+# t/09_backup_manager.t — Test BadgerOps::Scripts::BackupManager
 # ============================================================================
 use strict;
 use warnings;
@@ -9,7 +9,7 @@ use FindBin;
 use lib "$FindBin::Bin/../lib";
 use File::Temp qw(tempdir);
 
-use_ok('HBPerl::Scripts::BackupManager');
+use_ok('BadgerOps::Scripts::BackupManager');
 
 my $src_dir  = tempdir(CLEANUP => 1);
 my $dest_dir = tempdir(CLEANUP => 1);
@@ -26,7 +26,7 @@ print $fh "nested content\n";
 close $fh;
 
 subtest 'create backup' => sub {
-    my $result = HBPerl::Scripts::BackupManager::run(
+    my $result = BadgerOps::Scripts::BackupManager::run(
         action => 'create',
         source => $src_dir,
         dest   => $dest_dir,
@@ -42,7 +42,7 @@ subtest 'create backup' => sub {
 };
 
 subtest 'list backups' => sub {
-    my $result = HBPerl::Scripts::BackupManager::run(
+    my $result = BadgerOps::Scripts::BackupManager::run(
         action => 'list',
         dest   => $dest_dir,
         prefix => 'test',
@@ -53,11 +53,11 @@ subtest 'list backups' => sub {
 };
 
 subtest 'verify backup' => sub {
-    my $list = HBPerl::Scripts::BackupManager::run(
+    my $list = BadgerOps::Scripts::BackupManager::run(
         action => 'list', dest => $dest_dir, prefix => 'test');
     my $file = $list->{backups}[0]{path};
 
-    my $result = HBPerl::Scripts::BackupManager::run(
+    my $result = BadgerOps::Scripts::BackupManager::run(
         action => 'verify',
         file   => $file,
     );
@@ -69,11 +69,11 @@ subtest 'verify backup' => sub {
 subtest 'rotate backups' => sub {
     # Create a second backup with a distinct timestamp
     sleep 1;
-    HBPerl::Scripts::BackupManager::run(
+    BadgerOps::Scripts::BackupManager::run(
         action => 'create', source => $src_dir,
         dest => $dest_dir, prefix => 'test');
 
-    my $result = HBPerl::Scripts::BackupManager::run(
+    my $result = BadgerOps::Scripts::BackupManager::run(
         action => 'rotate',
         dest   => $dest_dir,
         prefix => 'test',
@@ -85,9 +85,9 @@ subtest 'rotate backups' => sub {
 };
 
 subtest 'format_report works' => sub {
-    my $r = HBPerl::Scripts::BackupManager::run(
+    my $r = BadgerOps::Scripts::BackupManager::run(
         action => 'list', dest => $dest_dir, prefix => 'test');
-    my $report = HBPerl::Scripts::BackupManager::format_report($r);
+    my $report = BadgerOps::Scripts::BackupManager::format_report($r);
     ok(length($report) > 50, 'report has content');
     like($report, qr/BACKUP/i, 'report has backup header');
 };

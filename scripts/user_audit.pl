@@ -7,7 +7,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Getopt::Long;
-use HBPerl::Scripts::UserAudit;
+use BadgerOps::Scripts::UserAudit;
 
 my $help;
 GetOptions('help|h' => \$help) or die "Usage: $0 [--help]\n";
@@ -17,5 +17,5 @@ if ($help) {
     exit 0;
 }
 
-my $result = HBPerl::Scripts::UserAudit::run();
-print HBPerl::Scripts::UserAudit::format_report($result);
+my $result = BadgerOps::Scripts::UserAudit::run();
+print BadgerOps::Scripts::UserAudit::format_report($result);

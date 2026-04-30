@@ -1,6 +1,6 @@
-# HB Perl Keyboard Shortcuts
+# BadgerOps Keyboard Shortcuts
 
-This reference lists all keyboard shortcuts available in the GTK3 GUI (`hb_gui`).
+This reference lists all keyboard shortcuts available in the GTK3 GUI (`badgerops-gui`).
 
 ---
 
@@ -8,7 +8,7 @@ This reference lists all keyboard shortcuts available in the GTK3 GUI (`hb_gui`)
 
 | Shortcut | Action |
 |---|---|
-| `Ctrl+Q` | Quit HB Perl |
+| `Ctrl+Q` | Quit BadgerOps |
 | `F1` | Open Help / About dialog |
 | `Ctrl+,` | Open Preferences dialog |
 
@@ -92,27 +92,27 @@ This reference lists all keyboard shortcuts available in the GTK3 GUI (`hb_gui`)
 
 ## CLI Quick Reference
 
-The CLI (`hb_cli`) has no interactive shortcuts, but useful invocations:
+The CLI (`badgerops-cli`) has no interactive shortcuts, but useful invocations:
 
 ```bash
 # Run with typo correction ("did you mean?")
-hb_cli run sytm_info
+badgerops-cli run sytm_info
 
 # Batch run with JSON export
-hb_cli batch --export=json system_info,disk_usage,service_monitor
+badgerops-cli batch --export=json system_info,disk_usage,service_monitor
 
 # Plugin management
-hb_cli plugin list
-hb_cli plugin disable MyPlugin
+badgerops-cli plugin list
+badgerops-cli plugin disable MyPlugin
 
 # Schedule a script
-hb_cli schedule add disk_usage '0 * * * *'
-hb_cli schedule list
+badgerops-cli schedule add disk_usage '0 * * * *'
+badgerops-cli schedule list
 ```
 
 ## TUI Quick Reference
 
-Inside the TUI script menu (`hb_tui`):
+Inside the TUI script menu (`badgerops-tui`):
 
 | Key | Action |
 |---|---|

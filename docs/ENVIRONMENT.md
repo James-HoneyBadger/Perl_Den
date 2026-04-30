@@ -1,6 +1,6 @@
-# HB Perl IDE — Linux Environment Specification
+# BadgerOps IDE — Linux Environment Specification
 
-Complete specification of the runtime environment required by HB Perl IDE.  
+Complete specification of the runtime environment required by BadgerOps IDE.  
 Reference platform: **Arch Linux ARM aarch64** (rolling release).
 
 ---
@@ -48,7 +48,8 @@ Declared in both `Makefile.PL` and `cpanfile`.
 | `Glib`                         | 1.329       | GLib event loop, type system     |
 | `Glib::Object::Introspection`  | 0.049       | GObject Introspection bindings   |
 | `Gtk3`                         | 0.038       | GTK3 widget toolkit              |
-| `Gtk3::SourceView`             | 0.12        | Code editor with syntax highlighting |
+
+> **GtkSourceView** is loaded at runtime via `Glib::Object::Introspection` (mapped to the `Gtk3::SourceView::*` namespace). No separate CPAN module is required — install the system package `gir1.2-gtksource-4` (Debian) or `gtksourceview4` (Arch) instead.
 
 ### 3.2 Sysadmin / Core
 
@@ -61,7 +62,6 @@ Declared in both `Makefile.PL` and `cpanfile`.
 | `Text::Diff`          | 1.45        | File comparison (ConfigDiff)             |
 | `YAML::XS`            | 0.88        | Config file persistence                  |
 | `JSON::MaybeXS`       | 1.004       | JSON parsing                             |
-| `File::HomeDir`       | 1.006       | Cross-platform home directory resolution |
 
 ### 3.3 Developer Tools
 
@@ -104,7 +104,7 @@ These are the C/system libraries required by the Perl modules and GUI.
 
 ```bash
 # GTK3 toolkit and related
-sudo pacman -S gtk3 vte3 gtksourceview3
+sudo pacman -S gtk3 vte3 gtksourceview4
 
 # GObject Introspection (required by Perl Glib/Gtk3 bindings)
 sudo pacman -S gobject-introspection gobject-introspection-runtime
@@ -138,7 +138,7 @@ sudo pacman -S coreutils    # df, uname, etc.
 |----------------------------|------------------|
 | gtk3                       | 3.24.51          |
 | vte3                       | 0.82.2           |
-| gtksourceview3             | 3.24.11          |
+| gtksourceview4             | 4.8.x            |
 | gobject-introspection      | 1.86.0           |
 | openssl                    | 3.6.0            |
 | polkit                     | 127              |
@@ -189,7 +189,7 @@ sudo dnf install google-noto-fonts-common google-noto-emoji-fonts google-noto-sa
 | `noto-fonts-extra`    | Additional scripts (Georgian, Armenian, Tibetan, etc.)    |
 | `ttf-freefont`        | Broad Unicode fallback coverage (GNU FreeFont)            |
 
-### Unicode Characters Used by HB Perl
+### Unicode Characters Used by BadgerOps
 
 | Character(s)          | Location                       | Purpose                    |
 |-----------------------|--------------------------------|----------------------------|
@@ -264,9 +264,9 @@ The toolkit scripts shell out to these Linux commands. All must be on `$PATH`.
 ### Application Layout
 
 ```
-HB_Perl/                     # Project root ($HB_ROOT_DIR)
-├── bin/                     # Perl entry points (hb_perl_cli, hb_perl_tui, hb_perl_ide)
-├── lib/HBPerl/              # Perl modules
+BadgerOps/                     # Project root ($BADGEROPS_ROOT_DIR)
+├── bin/                     # Perl entry points (badgerops-cli, badgerops-tui, badgerops-ide)
+├── lib/BadgerOps/              # Perl modules
 │   ├── App.pm               # GUI application controller
 │   ├── BatchRunner.pm       # Batch/parallel script execution
 │   ├── Config.pm            # YAML-based config persistence
@@ -282,13 +282,13 @@ HB_Perl/                     # Project root ($HB_ROOT_DIR)
 │   ├── templates/           # New-file templates (8)
 │   ├── themes/              # GTK CSS themes (5: dark, light, high-contrast, vscode-dark, vscode-light)
 │   └── tutorials/           # 12 Perl tutorial POD files
-├── t/                       # Test suite (35 files, 299 tests)
+| t/                       # Test suite (29 top-level + unit/ + integration/)
 │   ├── unit/                # Unit tests
 │   ├── integration/         # Integration tests
 │   └── fixtures/            # Test data files
 ├── docs/                    # Documentation
 ├── .github/workflows/       # CI configuration
-├── _hb_env.sh               # Environment bootstrap
+├── _badgerops_env.sh               # Environment bootstrap
 ├── cpanfile                  # CPAN dependency declaration
 └── Makefile.PL               # Build system
 ```
@@ -297,10 +297,10 @@ HB_Perl/                     # Project root ($HB_ROOT_DIR)
 
 | Path                                  | Purpose                            |
 |---------------------------------------|-------------------------------------|
-| `~/.config/hb_perl/`                 | Config directory (auto-created)     |
-| `~/.config/hb_perl/config.yml`       | User preferences (theme, font, etc.)|
-| `~/.config/hb_perl/session.yml`      | Session state (window size, tabs)   |
-| `~/.config/hb_perl/baselines/`       | ConfigDiff baseline copies          |
+| `~/.config/badgerops/`                 | Config directory (auto-created)     |
+| `~/.config/badgerops/config.yml`       | User preferences (theme, font, etc.)|
+| `~/.config/badgerops/session.yml`      | Session state (window size, tabs)   |
+| `~/.config/badgerops/baselines/`       | ConfigDiff baseline copies          |
 
 ### System Paths Read by Scripts
 
@@ -329,17 +329,17 @@ HB_Perl/                     # Project root ($HB_ROOT_DIR)
 
 ## 8. Environment Variables
 
-Set automatically by `_hb_env.sh` when launching via the wrapper scripts.
+Set automatically by `_badgerops_env.sh` when launching via the wrapper scripts.
 
 | Variable              | Value                              | Purpose                       |
 |-----------------------|------------------------------------|-------------------------------|
-| `HB_ROOT_DIR`        | Project root (auto-detected)       | Base path for all lookups     |
-| `HB_PERL_SHARE_DIR`  | `$HB_ROOT_DIR/share`              | Templates, themes, tutorials  |
-| `HB_PERL_SCRIPTS_DIR`| `$HB_ROOT_DIR/scripts`            | Toolkit script directory      |
-| `HB_LAUNCH_NAME`     | `basename $0` of wrapper script    | Display name in CLI/TUI help  |
-| `PERL5LIB`           | Prepended with `$HB_ROOT_DIR/lib` | Module resolution             |
-| `PATH`               | Prepended with `$HB_ROOT_DIR/bin` | Command resolution            |
-| `DISPLAY` / `WAYLAND_DISPLAY` | (system-set)            | Required for GUI mode (also required for `hb_perl_ide --version` due to compile-time `Gtk3 -init`) |
+| `BADGEROPS_ROOT_DIR`        | Project root (auto-detected)       | Base path for all lookups     |
+| `BADGEROPS_SHARE_DIR`  | `$BADGEROPS_ROOT_DIR/share`              | Templates, themes, tutorials  |
+| `BADGEROPS_SCRIPTS_DIR`| `$BADGEROPS_ROOT_DIR/scripts`            | Toolkit script directory      |
+| `BADGEROPS_LAUNCH_NAME`     | `basename $0` of wrapper script    | Display name in CLI/TUI help  |
+| `PERL5LIB`           | Prepended with `$BADGEROPS_ROOT_DIR/lib` | Module resolution             |
+| `PATH`               | Prepended with `$BADGEROPS_ROOT_DIR/bin` | Command resolution            |
+| `DISPLAY` / `WAYLAND_DISPLAY` | (system-set)            | Required for GUI mode (also required for `badgerops-ide --version` due to compile-time `Gtk3 -init`) |
 
 ---
 
@@ -349,7 +349,7 @@ Set automatically by `_hb_env.sh` when launching via the wrapper scripts.
 
 ```bash
 # 1. System dependencies
-sudo pacman -S perl gtk3 vte3 gtksourceview3 gobject-introspection \
+sudo pacman -S perl gtk3 vte3 gtksourceview4 gobject-introspection \
     openssl polkit iproute2 inetutils procps-ng cronie iputils
 
 # 2. Unicode fonts
@@ -360,24 +360,24 @@ fc-cache -f
 cpanm --installdeps .
 
 # 4. Verify
-perl -c lib/HBPerl/App.pm       # Compile check
+perl -c lib/BadgerOps/App.pm       # Compile check
 prove -l t/00_compile.t          # Module compile test
 
-# 5. Install commands (optional — adds hb_perl, hb_cli, etc. to PATH)
-./install_hb_perl_command.sh --user
+# 5. Install commands (optional — adds badgerops, badgerops-cli, etc. to PATH)
+./install_badgerops_command.sh --user
 
 # 6. Launch
-./hb_gui                        # GTK3 IDE
-./hb_cli list                   # CLI — list scripts
-./hb_tui                        # Terminal UI
+./badgerops-gui                        # GTK3 IDE
+./badgerops-cli list                   # CLI — list scripts
+./badgerops-tui                        # Terminal UI
 ```
 
 ### Debian / Ubuntu (Full Setup)
 
 ```bash
 # 1. System dependencies
-sudo apt install perl libgtk3-perl libvte-2.91-dev libgtksourceview-3.0-dev \
-    gir1.2-vte-2.91 gir1.2-gtksource-3.0 libglib-object-introspection-perl \
+sudo apt install perl libgtk3-perl libvte-2.91-dev libgtksourceview-4-dev \
+    gir1.2-vte-2.91 gir1.2-gtksource-4 libglib-object-introspection-perl \
     openssl policykit-1 iproute2 procps cron iputils-ping
 
 # 2. Unicode fonts
@@ -403,14 +403,16 @@ perl -v | grep version
 perl -I lib -e '
     use Glib;
     use Gtk3;
-    use Gtk3::SourceView;
+    use Glib::Object::Introspection;
+    Glib::Object::Introspection->setup(
+        basename => "GtkSource", version => "4", package => "Gtk3::SourceView",
+    );
     use Proc::ProcessTable;
     use Net::DNS;
     use IO::Socket::SSL;
     use Text::Diff;
     use YAML::XS;
     use JSON::MaybeXS;
-    use File::HomeDir;
     use Perl::Tidy;
     use Perl::Critic;
     print "All modules OK\n";

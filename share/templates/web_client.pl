@@ -27,7 +27,7 @@ die "URL required (--url)\n" unless $url;
 
 # ── Build Request ──────────────────────────────────────────
 my $http = HTTP::Tiny->new(
-    agent   => 'HBPerl-Client/1.0',
+    agent   => 'BadgerOps-Client/1.0',
     timeout => 30,
 );
 

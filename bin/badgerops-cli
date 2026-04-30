@@ -1,0 +1,393 @@
+#!/usr/bin/perl
+# ============================================================================
+# HB Perl CLI - Command line interface for the HB Perl toolkit
+# ============================================================================
+use strict;
+use warnings;
+use utf8;
+use FindBin qw($RealBin);
+use lib "$RealBin/../lib";
+use File::Basename qw(basename);
+use File::Spec;
+use BadgerOps::ScriptRegistry qw(script_index find_script find_closest plugins_dir);
+
+my $SCRIPTS_DIR = File::Spec->catdir($RealBin, '..', 'scripts');
+my $PROGRAM     = $ENV{HB_LAUNCH_NAME} || basename($0);
+
+my $command = shift @ARGV // 'help';
+
+# Allow shorthand invocation: `hb_cli system_info`
+if ($command !~ /^(?:help|--help|-h|list|run|batch|ide|plugin|schedule)$/) {
+    unshift @ARGV, $command;
+    $command = 'run';
+}
+
+if ($command eq 'help' || $command eq '--help' || $command eq '-h') {
+    _print_help();
+    exit 0;
+}
+
+if ($command eq 'list') {
+    _list_scripts();
+    exit 0;
+}
+
+if ($command eq 'run') {
+    my $name = shift @ARGV;
+    if (!$name) {
+        warn "Missing script name. Try: $PROGRAM list\n";
+        exit 2;
+    }
+
+    my $script_path = _resolve_script_path($name);
+    if (!$script_path) {
+        my $suggestion = find_closest($name);
+        warn "Unknown script: $name\n";
+        warn "Did you mean: $suggestion?\n" if defined $suggestion;
+        warn "Run '$PROGRAM list' to see available scripts.\n";
+        exit 2;
+    }
+
+    exec $^X, $script_path, @ARGV;
+    die "Failed to execute $script_path: $!";
+}
+
+if ($command eq 'batch') {
+    # Parse --export=FORMAT option
+    my $export_format;
+    @ARGV = grep { /^--export=(.+)$/ ? ($export_format = $1, 0) : 1 } @ARGV;
+
+    my $names_arg = shift @ARGV;
+    if (!$names_arg) {
+        warn "Usage: $PROGRAM batch [--export=text|html|json] <script1,script2,...>\n";
+        warn "Example: $PROGRAM batch system_info,disk_usage,config_diff\n";
+        exit 2;
+    }
+    my @names = split /,/, $names_arg;
+    @names = grep { length } @names;
+    if (!@names) {
+        warn "No valid script names given.\n";
+        exit 2;
+    }
+
+    require BadgerOps::BatchRunner;
+    my $runner = BadgerOps::BatchRunner->new(
+        on_progress => sub {
+            my ($name, $i, $total) = @_;
+            printf STDERR "  [%d/%d] Running %s ...\n", $i, $total, $name;
+        },
+        on_error => sub {
+            my ($name, $err) = @_;
+            warn "  ERROR in $name: $err\n";
+        },
+    );
+    my $results = $runner->run_batch(@names);
+    if ($export_format && $export_format ne 'text') {
+        print $runner->export_report($results, format => $export_format);
+    } else {
+        print $runner->format_batch_report($results);
+    }
+    exit 0;
+}
+
+if ($command eq 'ide') {
+    my $ide = File::Spec->catfile($RealBin, 'badgerops-ide');
+    exec $^X, $ide, @ARGV;
+    die "Failed to launch IDE: $!";
+}
+
+# ── Plugin management ────────────────────────────────────────────────────────
+if ($command eq 'plugin') {
+    my $sub = shift @ARGV // 'list';
+
+    if ($sub eq 'list') {
+        _plugin_list();
+        exit 0;
+    }
+
+    if ($sub eq 'info') {
+        my $name = shift @ARGV or do {
+            warn "Usage: $PROGRAM plugin info <name>\n";
+            exit 2;
+        };
+        _plugin_info($name);
+        exit 0;
+    }
+
+    if ($sub eq 'enable' || $sub eq 'disable') {
+        my $name = shift @ARGV or do {
+            warn "Usage: $PROGRAM plugin $sub <name>\n";
+            exit 2;
+        };
+        _plugin_toggle($name, $sub eq 'disable');
+        exit 0;
+    }
+
+    warn "Unknown plugin subcommand: $sub\n";
+    warn "Valid: list info enable disable\n";
+    exit 2;
+}
+
+# ── Script scheduling ────────────────────────────────────────────────────────
+if ($command eq 'schedule') {
+    my $sub = shift @ARGV // 'list';
+    require BadgerOps::Scheduler;
+
+    if ($sub eq 'list') {
+        my @jobs = BadgerOps::Scheduler::list_jobs();
+        if (!@jobs) {
+            print "No scheduled HB Perl jobs.\n";
+        } else {
+            printf "%-30s %-20s %s\n", 'Script', 'Schedule', 'Args';
+            print '-' x 70, "\n";
+            for my $j (@jobs) {
+                printf "%-30s %-20s %s\n",
+                    $j->{script}, $j->{schedule}, $j->{args} // '';
+            }
+        }
+        exit 0;
+    }
+
+    if ($sub eq 'add') {
+        my ($script, $schedule, @args) = @ARGV;
+        unless ($script && $schedule) {
+            warn "Usage: $PROGRAM schedule add <script> <cron_expr> [args...]\n";
+            warn "Example: $PROGRAM schedule add system_info '0 * * * *'\n";
+            exit 2;
+        }
+        BadgerOps::Scheduler::add_job(
+            script   => $script,
+            schedule => $schedule,
+            args     => join(' ', @args),
+        );
+        print "Scheduled '$script' with cron expression '$schedule'.\n";
+        exit 0;
+    }
+
+    if ($sub eq 'remove') {
+        my $script = shift @ARGV or do {
+            warn "Usage: $PROGRAM schedule remove <script>\n";
+            exit 2;
+        };
+        my $removed = BadgerOps::Scheduler::remove_job($script);
+        if ($removed) {
+            print "Removed scheduled job for '$script'.\n";
+        } else {
+            warn "No scheduled job found for '$script'.\n";
+            exit 1;
+        }
+        exit 0;
+    }
+
+    warn "Unknown schedule subcommand: $sub\n";
+    warn "Valid: list add remove\n";
+    exit 2;
+}
+
+warn "Unknown command: $command\n";
+_print_help();
+exit 2;
+
+sub _resolve_script_path {
+    my ($raw_name) = @_;
+    return undef if !defined $raw_name || $raw_name eq '';
+
+    my @match = find_script($raw_name);
+    return undef unless @match;
+
+    my $path = File::Spec->catfile($SCRIPTS_DIR, $match[1]);
+    return -f $path ? $path : undef;
+}
+
+sub _plugin_list {
+    require BadgerOps::ScriptRegistry;
+    my $dir = plugins_dir();
+    unless (-d $dir) {
+        print "No plugins directory found ($dir).\n";
+        print "Create it and place .pm files there to install plugins.\n";
+        return;
+    }
+    opendir(my $dh, $dir) or die "Cannot read $dir: $!\n";
+    my @pm = sort grep { /\.pm$/ } readdir $dh;
+    closedir $dh;
+    if (!@pm) {
+        print "No plugins installed in $dir.\n";
+        return;
+    }
+    require BadgerOps::Config;
+    BadgerOps::Config::load();
+    my %disabled = map { $_ => 1 } @{ BadgerOps::Config::get('disabled_plugins') // [] };
+    printf "%-25s %-12s %s\n", 'Plugin', 'Status', 'File';
+    print '-' x 60, "\n";
+    for my $f (@pm) {
+        my $status = $disabled{$f} ? 'disabled' : 'enabled';
+        printf "%-25s %-12s %s\n", ($f =~ s/\.pm$//r), $status, $f;
+    }
+}
+
+sub _plugin_info {
+    my ($name) = @_;
+    my $dir  = plugins_dir();
+    my $file = "$dir/$name.pm";
+    $file .= '.pm' unless $name =~ /\.pm$/;
+    unless (-f $file) {
+        warn "Plugin not found: $name\n";
+        exit 1;
+    }
+    # Parse comment headers
+    if (open my $fh, '<', $file) {
+        my %meta;
+        while (<$fh>) {
+            last if $. > 30;
+            $meta{$1} = (split /:\s*/, $_, 2)[1] if /^#\s*(Name|Description|Version|Author|Category):/i;
+        }
+        close $fh;
+        for my $k (qw(Name Version Author Category Description)) {
+            printf "%-14s %s\n", "$k:", $meta{lc $k} // 'N/A' if exists $meta{lc $k};
+        }
+    }
+}
+
+sub _plugin_toggle {
+    my ($name, $disable) = @_;
+    require BadgerOps::Config;
+    BadgerOps::Config::load();
+    my $list = BadgerOps::Config::get('disabled_plugins') // [];
+    my %d = map { $_ => 1 } @$list;
+    $name =~ s/\.pm$//;
+    if ($disable) {
+        $d{$name} = 1;
+        print "Plugin '$name' disabled.\n";
+    } else {
+        delete $d{$name};
+        print "Plugin '$name' enabled.\n";
+    }
+    BadgerOps::Config::set('disabled_plugins', [ sort keys %d ]);
+    BadgerOps::Config::save();
+}
+
+sub _list_scripts {
+    print "HB Perl CLI scripts\n";
+    print "=" x 80, "\n";
+    printf "%-22s %-12s %s\n", 'Script', 'Category', 'Description';
+    print "-" x 80, "\n";
+
+    for my $row (script_index()) {
+        my ($name, $file, $module, $desc, $category) = @$row;
+        my $stem = $file; $stem =~ s/\.pl$//;
+        printf "%-22s %-12s %s\n", $stem, $category, $desc;
+    }
+
+    print "\nExamples:\n";
+    print "  $PROGRAM run system_info\n";
+    print "  $PROGRAM run port_scanner -- --host 127.0.0.1\n";
+    print "  $PROGRAM batch system_info,disk_usage,config_diff\n";
+    print "  $PROGRAM ide\n";
+}
+
+sub _print_help {
+    print <<HELP;
+HB Perl CLI v2.0
+
+Usage:
+  $PROGRAM list
+      List all scripts (built-in, plugins, and user scripts).
+
+  $PROGRAM run <script_name> [-- <script_args...>]
+      Run a script by name (fuzzy match supported).
+      Name accepts underscore or hyphen style, with or without .pl.
+
+  $PROGRAM batch [--export=text|html|json] <script1,script2,...>
+      Run multiple scripts sequentially and aggregate reports.
+      Names are comma-separated (no spaces).
+      Use --export=html or --export=json to write a structured report.
+
+  $PROGRAM plugin list
+      List installed plugins and their enabled/disabled status.
+
+  $PROGRAM plugin info <name>
+      Show metadata for a plugin.
+
+  $PROGRAM plugin enable <name>
+      Enable a previously disabled plugin.
+
+  $PROGRAM plugin disable <name>
+      Disable a plugin without removing it.
+
+  $PROGRAM schedule list
+      List all scheduled HB Perl jobs (from crontab).
+
+  $PROGRAM schedule add <script> <cron_expr> [args...]
+      Schedule a script via crontab.
+      Example: $PROGRAM schedule add disk_usage '0 * * * *'
+
+  $PROGRAM schedule remove <script>
+      Remove a scheduled job from crontab.
+
+  $PROGRAM ide
+      Launch the GTK IDE.
+
+  $PROGRAM help
+      Show this help.
+HELP
+}
+
+__END__
+
+=head1 NAME
+
+badgerops-cli - Command-line interface for the HB Perl toolkit
+
+=head1 SYNOPSIS
+
+    badgerops-cli list
+    badgerops-cli run <script_name> [-- <args>]
+    badgerops-cli batch <script1,script2,...>
+    badgerops-cli ide
+    badgerops-cli help
+
+=head1 DESCRIPTION
+
+A command-line front-end for running the 15 bundled sysadmin scripts.
+Script names accept underscore or hyphen style, with or without F<.pl>.
+
+Shorthand invocation is supported: C<badgerops-cli system_info> is
+equivalent to C<badgerops-cli run system_info>.
+
+=head1 COMMANDS
+
+=over 4
+
+=item B<list>
+
+Print a table of all available toolkit scripts.
+
+=item B<run E<lt>nameE<gt> [-- E<lt>argsE<gt>]>
+
+Execute a toolkit script by name.  Any arguments after C<--> are
+passed to the script.
+
+=item B<batch E<lt>script1,script2,...E<gt>>
+
+Run multiple scripts sequentially using their module C<run()> functions
+and print an aggregated report.  Names are comma-separated.
+
+=item B<ide>
+
+Launch the GTK-based IDE (L<badgerops-ide>).
+
+=item B<help>
+
+Show the built-in usage summary.
+
+=back
+
+=head1 AUTHOR
+
+James
+
+=head1 LICENSE
+
+MIT
+
+=cut

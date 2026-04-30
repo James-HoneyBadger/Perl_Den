@@ -1,4 +1,4 @@
-# HB Perl IDE - Dependencies
+# BadgerOps IDE - Dependencies
 # Install with: cpanm --installdeps .
 
 # Minimum Perl version

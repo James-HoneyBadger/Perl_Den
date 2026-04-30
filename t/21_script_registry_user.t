@@ -10,7 +10,7 @@ use lib "$FindBin::Bin/../lib";
 use File::Temp qw(tempdir);
 use File::Path qw(make_path);
 
-use_ok('HBPerl::ScriptRegistry');
+use_ok('BadgerOps::ScriptRegistry');
 
 # Redirect user scripts directory to a temp location
 my $tmpdir = tempdir(CLEANUP => 1);
@@ -19,15 +19,15 @@ make_path($user_dir);
 
 {
     no warnings 'redefine';
-    *HBPerl::ScriptRegistry::user_scripts_dir = sub { $user_dir };
+    *BadgerOps::ScriptRegistry::user_scripts_dir = sub { $user_dir };
 }
 
 # Reset cache
-@HBPerl::ScriptRegistry::_user_scripts_cache = ();
-$HBPerl::ScriptRegistry::_user_scripts_mtime = 0;
+@BadgerOps::ScriptRegistry::_user_scripts_cache = ();
+$BadgerOps::ScriptRegistry::_user_scripts_mtime = 0;
 
 subtest 'built-in scripts always present' => sub {
-    my @index = HBPerl::ScriptRegistry::script_index();
+    my @index = BadgerOps::ScriptRegistry::script_index();
     cmp_ok(scalar @index, '>=', 15, 'at least 15 built-in scripts');
 };
 
@@ -45,10 +45,10 @@ SCRIPT
     close $fh;
 
     # Reset cache to force re-scan
-    @HBPerl::ScriptRegistry::_user_scripts_cache = ();
-    $HBPerl::ScriptRegistry::_user_scripts_mtime = 0;
+    @BadgerOps::ScriptRegistry::_user_scripts_cache = ();
+    $BadgerOps::ScriptRegistry::_user_scripts_mtime = 0;
 
-    my @index = HBPerl::ScriptRegistry::script_index();
+    my @index = BadgerOps::ScriptRegistry::script_index();
     my @user = grep { $_->[4] eq 'User Scripts' } @index;
     is(scalar @user, 1, 'found 1 user script');
     is($user[0][0], 'My Custom Tool', 'name extracted from header');
@@ -61,10 +61,10 @@ subtest 'user script without metadata gets defaults' => sub {
     print $fh "#!/usr/bin/env perl\nprint 1;\n";
     close $fh;
 
-    @HBPerl::ScriptRegistry::_user_scripts_cache = ();
-    $HBPerl::ScriptRegistry::_user_scripts_mtime = 0;
+    @BadgerOps::ScriptRegistry::_user_scripts_cache = ();
+    $BadgerOps::ScriptRegistry::_user_scripts_mtime = 0;
 
-    my @index = HBPerl::ScriptRegistry::script_index();
+    my @index = BadgerOps::ScriptRegistry::script_index();
     my @user = grep { $_->[4] eq 'User Scripts' } @index;
     is(scalar @user, 2, '2 user scripts now');
 
@@ -75,19 +75,19 @@ subtest 'user script without metadata gets defaults' => sub {
 };
 
 subtest 'find_script finds user scripts' => sub {
-    @HBPerl::ScriptRegistry::_user_scripts_cache = ();
-    $HBPerl::ScriptRegistry::_user_scripts_mtime = 0;
+    @BadgerOps::ScriptRegistry::_user_scripts_cache = ();
+    $BadgerOps::ScriptRegistry::_user_scripts_mtime = 0;
 
-    my @found = HBPerl::ScriptRegistry::find_script('my_tool');
+    my @found = BadgerOps::ScriptRegistry::find_script('my_tool');
     ok(scalar @found > 0, 'find_script matched user script');
     is($found[0], 'My Custom Tool', 'correct name returned');
 };
 
 subtest 'script_categories includes User Scripts' => sub {
-    @HBPerl::ScriptRegistry::_user_scripts_cache = ();
-    $HBPerl::ScriptRegistry::_user_scripts_mtime = 0;
+    @BadgerOps::ScriptRegistry::_user_scripts_cache = ();
+    $BadgerOps::ScriptRegistry::_user_scripts_mtime = 0;
 
-    my @cats = HBPerl::ScriptRegistry::script_categories();
+    my @cats = BadgerOps::ScriptRegistry::script_categories();
     my ($user_cat) = grep { $_->{name} eq 'User Scripts' } @cats;
     ok($user_cat, 'User Scripts category exists');
     cmp_ok(scalar @{$user_cat->{items}}, '>=', 2, 'has user script items');
@@ -98,10 +98,10 @@ subtest 'non-.pl files are ignored' => sub {
     print $fh "Not a script\n";
     close $fh;
 
-    @HBPerl::ScriptRegistry::_user_scripts_cache = ();
-    $HBPerl::ScriptRegistry::_user_scripts_mtime = 0;
+    @BadgerOps::ScriptRegistry::_user_scripts_cache = ();
+    $BadgerOps::ScriptRegistry::_user_scripts_mtime = 0;
 
-    my @index = HBPerl::ScriptRegistry::script_index();
+    my @index = BadgerOps::ScriptRegistry::script_index();
     my @user = grep { $_->[4] eq 'User Scripts' } @index;
     is(scalar @user, 2, 'still 2 user scripts (txt ignored)');
 };
@@ -112,19 +112,19 @@ subtest 'empty user dir returns no user scripts' => sub {
 
     {
         no warnings 'redefine';
-        *HBPerl::ScriptRegistry::user_scripts_dir = sub { $empty_dir };
+        *BadgerOps::ScriptRegistry::user_scripts_dir = sub { $empty_dir };
     }
-    @HBPerl::ScriptRegistry::_user_scripts_cache = ();
-    $HBPerl::ScriptRegistry::_user_scripts_mtime = 0;
+    @BadgerOps::ScriptRegistry::_user_scripts_cache = ();
+    $BadgerOps::ScriptRegistry::_user_scripts_mtime = 0;
 
-    my @index = HBPerl::ScriptRegistry::script_index();
+    my @index = BadgerOps::ScriptRegistry::script_index();
     my @user = grep { $_->[4] eq 'User Scripts' } @index;
     is(scalar @user, 0, 'no user scripts from empty dir');
 
     # Restore
     {
         no warnings 'redefine';
-        *HBPerl::ScriptRegistry::user_scripts_dir = sub { $user_dir };
+        *BadgerOps::ScriptRegistry::user_scripts_dir = sub { $user_dir };
     }
 };
 

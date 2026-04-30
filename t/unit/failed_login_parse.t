@@ -9,7 +9,7 @@ use Test::More;
 use FindBin;
 use lib "$FindBin::Bin/../../lib";
 
-use_ok('HBPerl::Scripts::FailedLoginDetector');
+use_ok('BadgerOps::Scripts::FailedLoginDetector');
 
 # ---------------------------------------------------------------------------
 # _parse_auth_lines tests
@@ -19,7 +19,7 @@ subtest 'parse SSH failed password' => sub {
     my @lines = (
         "Mar 15 10:22:33 myhost sshd[1234]: Failed password for james from 192.168.1.100 port 22 ssh2\n",
     );
-    my @entries = HBPerl::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
+    my @entries = BadgerOps::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
     is(scalar @entries, 1, 'one entry parsed');
     is($entries[0]{type}, 'fail', 'type is fail');
     is($entries[0]{user}, 'james', 'user parsed');
@@ -33,7 +33,7 @@ subtest 'parse SSH failed password for invalid user' => sub {
     my @lines = (
         "Mar 15 10:22:33 myhost sshd[1234]: Failed password for invalid user admin from 10.0.0.5 port 22 ssh2\n",
     );
-    my @entries = HBPerl::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
+    my @entries = BadgerOps::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
     is(scalar @entries, 1, 'one entry parsed');
     is($entries[0]{type}, 'fail', 'type is fail');
     is($entries[0]{user}, 'admin', 'invalid user name parsed');
@@ -44,7 +44,7 @@ subtest 'parse Invalid user line' => sub {
     my @lines = (
         "Mar 15 10:23:00 myhost sshd[1235]: Invalid user hacker from 10.0.0.99\n",
     );
-    my @entries = HBPerl::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
+    my @entries = BadgerOps::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
     is(scalar @entries, 1, 'one entry parsed');
     is($entries[0]{type}, 'fail', 'type is fail');
     is($entries[0]{user}, 'hacker', 'user parsed');
@@ -56,7 +56,7 @@ subtest 'parse PAM authentication failure' => sub {
     my @lines = (
         "Mar 15 11:00:00 myhost login: authentication failure; logname= uid=0 euid=0 tty=/dev/tty1 ruser=root rhost=192.168.1.50\n",
     );
-    my @entries = HBPerl::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
+    my @entries = BadgerOps::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
     is(scalar @entries, 1, 'one entry parsed');
     is($entries[0]{type}, 'fail', 'type is fail');
     is($entries[0]{user}, 'root', 'user parsed');
@@ -68,7 +68,7 @@ subtest 'parse Connection closed during auth' => sub {
     my @lines = (
         "Mar 15 12:00:00 myhost sshd[5678]: Connection closed by authenticating user deploy 172.16.0.1 port 22\n",
     );
-    my @entries = HBPerl::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
+    my @entries = BadgerOps::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
     is(scalar @entries, 1, 'one entry parsed');
     is($entries[0]{type}, 'fail', 'type is fail');
     is($entries[0]{user}, 'deploy', 'user parsed');
@@ -80,7 +80,7 @@ subtest 'parse Accepted login' => sub {
     my @lines = (
         "Mar 15 12:30:00 myhost sshd[9999]: Accepted publickey for james from 192.168.1.1 port 22 ssh2\n",
     );
-    my @entries = HBPerl::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
+    my @entries = BadgerOps::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
     is(scalar @entries, 1, 'one entry parsed');
     is($entries[0]{type}, 'success', 'type is success');
     is($entries[0]{method}, 'publickey', 'method parsed');
@@ -92,7 +92,7 @@ subtest 'parse sudo auth failure' => sub {
     my @lines = (
         "Mar 15 13:00:00 myhost sudo: pam_unix(sudo:auth): authentication failure; logname= uid=1000 user james\n",
     );
-    my @entries = HBPerl::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
+    my @entries = BadgerOps::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
     is(scalar @entries, 1, 'one entry parsed');
     is($entries[0]{type}, 'fail', 'type is fail');
     is($entries[0]{user}, 'james', 'user parsed');
@@ -109,7 +109,7 @@ subtest 'parse mixed log entries' => sub {
         "Mar 15 10:00:04 myhost sshd[104]: Invalid user test from 10.0.0.2\n",
         "Mar 15 10:00:05 myhost kernel: [12345.678] some kernel message\n",
     );
-    my @entries = HBPerl::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
+    my @entries = BadgerOps::Scripts::FailedLoginDetector::_parse_auth_lines(\@lines);
     is(scalar @entries, 5, 'parsed 5 of 6 lines (kernel message ignored)');
 
     my @fails = grep { $_->{type} eq 'fail' } @entries;
@@ -123,7 +123,7 @@ subtest 'parse mixed log entries' => sub {
 # ---------------------------------------------------------------------------
 
 subtest 'syslog_to_epoch parses syslog format' => sub {
-    my $epoch = HBPerl::Scripts::FailedLoginDetector::_syslog_to_epoch('Mar 15 10:22:33');
+    my $epoch = BadgerOps::Scripts::FailedLoginDetector::_syslog_to_epoch('Mar 15 10:22:33');
     ok(defined $epoch, 'returns a defined value');
     ok($epoch > 0, 'returns positive epoch');
 
@@ -136,7 +136,7 @@ subtest 'syslog_to_epoch parses syslog format' => sub {
 };
 
 subtest 'syslog_to_epoch parses journalctl format' => sub {
-    my $epoch = HBPerl::Scripts::FailedLoginDetector::_syslog_to_epoch('Mon 2026-03-15 14:30:00');
+    my $epoch = BadgerOps::Scripts::FailedLoginDetector::_syslog_to_epoch('Mon 2026-03-15 14:30:00');
     ok(defined $epoch, 'returns a defined value');
     ok($epoch > 0, 'returns positive epoch');
 
@@ -147,12 +147,12 @@ subtest 'syslog_to_epoch parses journalctl format' => sub {
 };
 
 subtest 'syslog_to_epoch handles unknown' => sub {
-    my $epoch = HBPerl::Scripts::FailedLoginDetector::_syslog_to_epoch('unknown');
+    my $epoch = BadgerOps::Scripts::FailedLoginDetector::_syslog_to_epoch('unknown');
     ok(!defined $epoch, 'returns undef for unknown');
 };
 
 subtest 'syslog_to_epoch handles undef' => sub {
-    my $epoch = HBPerl::Scripts::FailedLoginDetector::_syslog_to_epoch(undef);
+    my $epoch = BadgerOps::Scripts::FailedLoginDetector::_syslog_to_epoch(undef);
     ok(!defined $epoch, 'returns undef for undef input');
 };
 
@@ -161,19 +161,19 @@ subtest 'syslog_to_epoch handles undef' => sub {
 # ---------------------------------------------------------------------------
 
 subtest 'extract_time syslog format' => sub {
-    my $t = HBPerl::Scripts::FailedLoginDetector::_extract_time(
+    my $t = BadgerOps::Scripts::FailedLoginDetector::_extract_time(
         'Mar 15 10:22:33 myhost sshd[1234]: something');
     like($t, qr/Mar\s+15\s+10:22:33/, 'extracted syslog timestamp');
 };
 
 subtest 'extract_time journalctl format' => sub {
-    my $t = HBPerl::Scripts::FailedLoginDetector::_extract_time(
+    my $t = BadgerOps::Scripts::FailedLoginDetector::_extract_time(
         'Mon 2026-03-15 14:30:00 myhost sshd[1234]: something');
     like($t, qr/Mon\s+2026-03-15\s+14:30:00/, 'extracted journalctl timestamp');
 };
 
 subtest 'extract_time unrecognized' => sub {
-    my $t = HBPerl::Scripts::FailedLoginDetector::_extract_time('garbage line');
+    my $t = BadgerOps::Scripts::FailedLoginDetector::_extract_time('garbage line');
     is($t, 'unknown', 'returns unknown for unrecognized format');
 };
 
@@ -195,7 +195,7 @@ subtest 'format_report handles empty results' => sub {
         threshold     => 5,
         recent        => [],
     };
-    my $report = HBPerl::Scripts::FailedLoginDetector::format_report($result);
+    my $report = BadgerOps::Scripts::FailedLoginDetector::format_report($result);
     ok(length($report) > 50, 'report has content');
     like($report, qr/FAILED LOGIN|BRUTE/i, 'has header');
     like($report, qr/None detected/, 'reports none detected');
@@ -224,7 +224,7 @@ subtest 'format_report handles flagged IPs and users' => sub {
               service => 'sshd', detail => 'Failed password' },
         ],
     };
-    my $report = HBPerl::Scripts::FailedLoginDetector::format_report($result);
+    my $report = BadgerOps::Scripts::FailedLoginDetector::format_report($result);
     like($report, qr/10\.0\.0\.1/, 'contains flagged IP');
     like($report, qr/root/, 'contains flagged user');
     like($report, qr/50 failed attempts/, 'shows attempt count');

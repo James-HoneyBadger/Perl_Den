@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # ============================================================================
-# t/19_runner.t — Test HBPerl::Runner (synchronous mode)
+# t/19_runner.t — Test BadgerOps::Runner (synchronous mode)
 # ============================================================================
 use strict;
 use warnings;
@@ -14,17 +14,17 @@ if ($@) {
     plan skip_all => 'Glib not available';
 }
 
-use_ok('HBPerl::Runner');
+use_ok('BadgerOps::Runner');
 
 subtest 'constructor' => sub {
-    my $runner = HBPerl::Runner->new();
+    my $runner = BadgerOps::Runner->new();
     ok($runner, 'created runner');
     ok(!$runner->is_running, 'not running initially');
 };
 
 subtest 'constructor with callbacks' => sub {
     my @out;
-    my $runner = HBPerl::Runner->new(
+    my $runner = BadgerOps::Runner->new(
         on_stdout => sub { push @out, $_[0] },
         on_stderr => sub {},
         on_exit   => sub {},
@@ -33,31 +33,31 @@ subtest 'constructor with callbacks' => sub {
 };
 
 subtest 'run_sync captures stdout' => sub {
-    my ($stdout, $stderr, $exit) = HBPerl::Runner->run_sync('echo', 'hello world');
+    my ($stdout, $stderr, $exit) = BadgerOps::Runner->run_sync('echo', 'hello world');
     chomp $stdout;
     is($stdout, 'hello world', 'stdout captured');
     is($exit, 0, 'exit code 0');
 };
 
 subtest 'run_sync captures stderr' => sub {
-    my ($stdout, $stderr, $exit) = HBPerl::Runner->run_sync(
+    my ($stdout, $stderr, $exit) = BadgerOps::Runner->run_sync(
         'bash', '-c', 'echo err >&2'
     );
     like($stderr, qr/err/, 'stderr captured');
 };
 
 subtest 'run_sync returns exit code' => sub {
-    my ($stdout, $stderr, $exit) = HBPerl::Runner->run_sync('false');
+    my ($stdout, $stderr, $exit) = BadgerOps::Runner->run_sync('false');
     isnt($exit, 0, 'non-zero exit code for false');
 };
 
 subtest 'run_sync single string fallback' => sub {
-    my ($stdout, $stderr, $exit) = HBPerl::Runner->run_sync('echo single_string_mode');
+    my ($stdout, $stderr, $exit) = BadgerOps::Runner->run_sync('echo single_string_mode');
     like($stdout, qr/single_string_mode/, 'single string mode works via bash -c');
 };
 
 subtest 'run_sync with perl one-liner' => sub {
-    my ($stdout, $stderr, $exit) = HBPerl::Runner->run_sync(
+    my ($stdout, $stderr, $exit) = BadgerOps::Runner->run_sync(
         'perl', '-e', 'print "42\n"'
     );
     chomp $stdout;

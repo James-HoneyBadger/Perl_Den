@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # ============================================================================
 # t/integration/cli_end_to_end.t — CLI launcher integration tests
-# Tests: hb_perl_cli --list, --run system_info, --help
+# Tests: badgerops-cli --list, --run system_info, --help
 # ============================================================================
 use strict;
 use warnings;
@@ -9,7 +9,7 @@ use Test::More;
 use FindBin;
 use lib "$FindBin::Bin/../../lib";
 
-my $cli = "$FindBin::Bin/../../bin/hb_perl_cli";
+my $cli = "$FindBin::Bin/../../bin/badgerops-cli";
 
 SKIP: {
     skip "CLI launcher not found at $cli", 6 unless -f $cli;

@@ -10,7 +10,7 @@ use FindBin;
 use lib "$FindBin::Bin/../../lib";
 use File::Temp qw(tempfile);
 
-use_ok('HBPerl::Scripts::LogAnalyzer');
+use_ok('BadgerOps::Scripts::LogAnalyzer');
 
 # ---------------------------------------------------------------------------
 # Invalid regex pattern handling
@@ -21,7 +21,7 @@ subtest 'invalid regex returns error' => sub {
     print $fh "Jun 15 08:01:22 myhost sshd[1234]: Test message\n";
     close $fh;
 
-    my $result = HBPerl::Scripts::LogAnalyzer::run(
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(
         log_file  => $tmpfile,
         max_lines => 100,
         pattern   => '(unclosed[paren',
@@ -36,7 +36,7 @@ subtest 'another invalid regex' => sub {
     print $fh "Jun 15 08:01:22 myhost sshd[1234]: Test message\n";
     close $fh;
 
-    my $result = HBPerl::Scripts::LogAnalyzer::run(
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(
         log_file  => $tmpfile,
         max_lines => 100,
         pattern   => '*bad',
@@ -60,7 +60,7 @@ Jun 15 08:04:55 myhost cron[9012]: (root) CMD (/usr/sbin/logrotate)
 LOG
     close $fh;
 
-    my $result = HBPerl::Scripts::LogAnalyzer::run(
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(
         log_file  => $tmpfile,
         max_lines => 100,
         pattern   => 'sshd',
@@ -79,7 +79,7 @@ Jun 15 08:03:44 myhost sshd[9012]: Failed password for admin
 LOG
     close $fh;
 
-    my $result = HBPerl::Scripts::LogAnalyzer::run(
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(
         log_file  => $tmpfile,
         max_lines => 100,
         pattern   => 'Failed.*root',
@@ -99,7 +99,7 @@ Jun 15 08:03:44 myhost sshd[9012]: Message three
 LOG
     close $fh;
 
-    my $result = HBPerl::Scripts::LogAnalyzer::run(
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(
         log_file  => $tmpfile,
         max_lines => 100,
         pattern   => '',
@@ -123,7 +123,7 @@ Jun 15 08:04:00 myhost sshd[102]: normal informational message
 LOG
     close $fh;
 
-    my $result = HBPerl::Scripts::LogAnalyzer::run(
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(
         log_file  => $tmpfile,
         max_lines => 100,
     );
@@ -145,7 +145,7 @@ subtest 'max_lines limits entries' => sub {
     }
     close $fh;
 
-    my $result = HBPerl::Scripts::LogAnalyzer::run(
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(
         log_file  => $tmpfile,
         max_lines => 10,
     );
@@ -160,7 +160,7 @@ subtest 'max_lines limits entries' => sub {
 
 subtest 'format_report error result' => sub {
     my $result = { error => 'Something went wrong' };
-    my $report = HBPerl::Scripts::LogAnalyzer::format_report($result);
+    my $report = BadgerOps::Scripts::LogAnalyzer::format_report($result);
     like($report, qr/ERROR.*Something went wrong/, 'error report contains message');
 };
 
@@ -174,8 +174,8 @@ subtest 'format_report hourly histogram' => sub {
     }
     close $fh;
 
-    my $result = HBPerl::Scripts::LogAnalyzer::run(log_file => $tmpfile);
-    my $report = HBPerl::Scripts::LogAnalyzer::format_report($result);
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(log_file => $tmpfile);
+    my $report = BadgerOps::Scripts::LogAnalyzer::format_report($result);
     like($report, qr/Hourly Activity/, 'has hourly section');
     like($report, qr/08:00/, 'shows hour 08');
 };

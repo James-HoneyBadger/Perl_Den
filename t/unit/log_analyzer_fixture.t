@@ -9,13 +9,13 @@ use Test::More;
 use FindBin;
 use lib "$FindBin::Bin/../../lib";
 
-use_ok('HBPerl::Scripts::LogAnalyzer');
+use_ok('BadgerOps::Scripts::LogAnalyzer');
 
 my $fixture = "$FindBin::Bin/../fixtures/syslog.sample";
 plan skip_all => 'syslog.sample fixture not found' unless -f $fixture;
 
 subtest 'parse fixture syslog' => sub {
-    my $result = HBPerl::Scripts::LogAnalyzer::run(
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(
         log_file  => $fixture,
         max_lines => 100,
     );
@@ -26,7 +26,7 @@ subtest 'parse fixture syslog' => sub {
 };
 
 subtest 'source_count tracks services' => sub {
-    my $result = HBPerl::Scripts::LogAnalyzer::run(
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(
         log_file  => $fixture,
         max_lines => 100,
     );
@@ -37,7 +37,7 @@ subtest 'source_count tracks services' => sub {
 };
 
 subtest 'severity classification on fixture' => sub {
-    my $result = HBPerl::Scripts::LogAnalyzer::run(
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(
         log_file  => $fixture,
         max_lines => 100,
     );
@@ -49,7 +49,7 @@ subtest 'severity classification on fixture' => sub {
 };
 
 subtest 'pattern filter on fixture - kernel' => sub {
-    my $result = HBPerl::Scripts::LogAnalyzer::run(
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(
         log_file  => $fixture,
         max_lines => 100,
         pattern   => 'kernel',
@@ -62,7 +62,7 @@ subtest 'pattern filter on fixture - kernel' => sub {
 };
 
 subtest 'pattern filter on fixture - sshd' => sub {
-    my $result = HBPerl::Scripts::LogAnalyzer::run(
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(
         log_file  => $fixture,
         max_lines => 100,
         pattern   => 'sshd',
@@ -72,7 +72,7 @@ subtest 'pattern filter on fixture - sshd' => sub {
 };
 
 subtest 'hourly distribution from fixture' => sub {
-    my $result = HBPerl::Scripts::LogAnalyzer::run(
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(
         log_file  => $fixture,
         max_lines => 100,
     );
@@ -84,11 +84,11 @@ subtest 'hourly distribution from fixture' => sub {
 };
 
 subtest 'format_report from fixture data' => sub {
-    my $result = HBPerl::Scripts::LogAnalyzer::run(
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(
         log_file  => $fixture,
         max_lines => 100,
     );
-    my $report = HBPerl::Scripts::LogAnalyzer::format_report($result);
+    my $report = BadgerOps::Scripts::LogAnalyzer::format_report($result);
     ok(length($report) > 200, 'report has substantial content');
     like($report, qr/LOG ANALYZER/i, 'has header');
     like($report, qr/(?:10 entries|entries.*10)/, 'mentions entry count');

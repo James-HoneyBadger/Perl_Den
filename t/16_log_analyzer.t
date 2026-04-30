@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # ============================================================================
-# t/16_log_analyzer.t — Test HBPerl::Scripts::LogAnalyzer
+# t/16_log_analyzer.t — Test BadgerOps::Scripts::LogAnalyzer
 # ============================================================================
 use strict;
 use warnings;
@@ -9,7 +9,7 @@ use FindBin;
 use lib "$FindBin::Bin/../lib";
 use File::Temp qw(tempfile);
 
-use_ok('HBPerl::Scripts::LogAnalyzer');
+use_ok('BadgerOps::Scripts::LogAnalyzer');
 
 subtest 'parse syslog-format log file' => sub {
     my ($fh, $tmpfile) = tempfile(SUFFIX => '.log', UNLINK => 1);
@@ -22,7 +22,7 @@ Jun 15 09:01:11 myhost sshd[2345]: error: Authentication failure for invalid use
 LOG
     close $fh;
 
-    my $result = HBPerl::Scripts::LogAnalyzer::run(
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(
         log_file  => $tmpfile,
         max_lines => 100,
     );
@@ -51,7 +51,7 @@ Jun 15 08:03:44 myhost sshd[5678]: Failed password for root
 LOG
     close $fh;
 
-    my $result = HBPerl::Scripts::LogAnalyzer::run(
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(
         log_file  => $tmpfile,
         max_lines => 100,
         pattern   => 'sshd',
@@ -61,7 +61,7 @@ LOG
 };
 
 subtest 'nonexistent file returns error' => sub {
-    my $result = HBPerl::Scripts::LogAnalyzer::run(
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(
         log_file => '/tmp/this_file_does_not_exist_' . $$,
     );
     ok($result->{error}, 'error is set');
@@ -73,14 +73,14 @@ subtest 'format_report produces text' => sub {
     print $fh "Jun 15 08:01:22 myhost sshd[1234]: Test message\n";
     close $fh;
 
-    my $result = HBPerl::Scripts::LogAnalyzer::run(log_file => $tmpfile);
-    my $report = HBPerl::Scripts::LogAnalyzer::format_report($result);
+    my $result = BadgerOps::Scripts::LogAnalyzer::run(log_file => $tmpfile);
+    my $report = BadgerOps::Scripts::LogAnalyzer::format_report($result);
     ok(length($report) > 50, 'report has content');
     like($report, qr/LOG ANALYZER/i, 'report has header');
 };
 
 subtest 'format_report handles error' => sub {
-    my $report = HBPerl::Scripts::LogAnalyzer::format_report({ error => 'test error' });
+    my $report = BadgerOps::Scripts::LogAnalyzer::format_report({ error => 'test error' });
     like($report, qr/ERROR:.*test error/, 'error report works');
 };
 

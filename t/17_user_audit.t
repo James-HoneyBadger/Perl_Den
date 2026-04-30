@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # ============================================================================
-# t/17_user_audit.t — Test HBPerl::Scripts::UserAudit
+# t/17_user_audit.t — Test BadgerOps::Scripts::UserAudit
 # ============================================================================
 use strict;
 use warnings;
@@ -8,13 +8,13 @@ use Test::More;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 
-use_ok('HBPerl::Scripts::UserAudit');
+use_ok('BadgerOps::Scripts::UserAudit');
 
 SKIP: {
     skip 'No /etc/passwd (non-Linux)', 16 unless -f '/etc/passwd';
 
 subtest 'run returns expected structure' => sub {
-    my $result = HBPerl::Scripts::UserAudit::run();
+    my $result = BadgerOps::Scripts::UserAudit::run();
     ok(ref $result eq 'HASH', 'returns a hashref');
 
     for my $key (qw(users login_users warnings sudoers password_status)) {
@@ -23,7 +23,7 @@ subtest 'run returns expected structure' => sub {
 };
 
 subtest 'users list is populated' => sub {
-    my $result = HBPerl::Scripts::UserAudit::run();
+    my $result = BadgerOps::Scripts::UserAudit::run();
     ok(ref $result->{users} eq 'ARRAY', 'users is an array');
     ok(scalar @{$result->{users}} > 0, 'has at least one user');
 
@@ -37,7 +37,7 @@ subtest 'users list is populated' => sub {
 };
 
 subtest 'login_users is a subset of users' => sub {
-    my $result = HBPerl::Scripts::UserAudit::run();
+    my $result = BadgerOps::Scripts::UserAudit::run();
     ok(ref $result->{login_users} eq 'ARRAY', 'login_users is an array');
     my $total  = scalar @{$result->{users}};
     my $logins = scalar @{$result->{login_users}};
@@ -46,13 +46,13 @@ subtest 'login_users is a subset of users' => sub {
 };
 
 subtest 'warnings is an array' => sub {
-    my $result = HBPerl::Scripts::UserAudit::run();
+    my $result = BadgerOps::Scripts::UserAudit::run();
     ok(ref $result->{warnings} eq 'ARRAY', 'warnings is an array');
 };
 
 subtest 'format_report produces text' => sub {
-    my $result = HBPerl::Scripts::UserAudit::run();
-    my $report = HBPerl::Scripts::UserAudit::format_report($result);
+    my $result = BadgerOps::Scripts::UserAudit::run();
+    my $report = BadgerOps::Scripts::UserAudit::format_report($result);
     ok(length($report) > 100, 'report has content');
     like($report, qr/USER.*AUDIT/i, 'report has header');
 };

@@ -1,4 +1,4 @@
-name: HB Perl CI
+name: BadgerOps CI
 
 on:
   push:
@@ -59,7 +59,7 @@ jobs:
         run: prove -lr t/
         env:
           PERL5LIB: lib:$HOME/perl5/lib/perl5
-          HBPERL_DEBUG: 0
+          BADGEROPS_DEBUG: 0
           DISPLAY: ''
 
       - name: Run coverage (latest Perl only)
@@ -70,7 +70,7 @@ jobs:
           cover -report text
         env:
           PERL5LIB: lib:$HOME/perl5/lib/perl5
-          HBPERL_DEBUG: 0
+          BADGEROPS_DEBUG: 0
           DISPLAY: ''
 
       - name: Re-run verbose on failure

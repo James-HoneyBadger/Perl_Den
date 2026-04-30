@@ -1,16 +1,16 @@
-# Writing Custom HBPerl Scripts
+# Writing Custom BadgerOps Scripts
 
-This guide explains how to create your own sysadmin scripts that integrate with the HB Perl IDE.
+This guide explains how to create your own sysadmin scripts that integrate with the BadgerOps IDE.
 
 ## Quick Start
 
-1. Copy the template: `share/templates/hbperl_module.pl`
-2. Save it to `~/.config/hb_perl/scripts/your_script.pl`
+1. Copy the template: `share/templates/badgerops_module.pl`
+2. Save it to `~/.config/badgerops/scripts/your_script.pl`
 3. Restart the IDE — your script appears in the **User Scripts** category
 
 ## Script Convention
 
-Every HBPerl script follows a two-function pattern:
+Every BadgerOps script follows a two-function pattern:
 
 ```perl
 sub run {
@@ -50,7 +50,7 @@ EOF
 
 ## Auto-Registration
 
-The IDE automatically discovers scripts in `~/.config/hb_perl/scripts/`.
+The IDE automatically discovers scripts in `~/.config/badgerops/scripts/`.
 
 ### Metadata Headers
 
@@ -75,14 +75,14 @@ If omitted, the filename is used as the display name.
 For reusable scripts, create a proper Perl module:
 
 ```
-lib/HBPerl/Scripts/MyModule.pm    # Module with run() and format_report()
+lib/BadgerOps/Scripts/MyModule.pm    # Module with run() and format_report()
 scripts/my_module.pl               # Thin wrapper that calls the module
 ```
 
 ### Module Pattern
 
 ```perl
-package HBPerl::Scripts::MyModule;
+package BadgerOps::Scripts::MyModule;
 use strict;
 use warnings;
 
@@ -110,19 +110,19 @@ use strict;
 use warnings;
 use FindBin qw($RealBin);
 use lib "$RealBin/../lib";
-use HBPerl::Scripts::MyModule;
+use BadgerOps::Scripts::MyModule;
 
-my $result = HBPerl::Scripts::MyModule::run();
-print HBPerl::Scripts::MyModule::format_report($result);
+my $result = BadgerOps::Scripts::MyModule::run();
+print BadgerOps::Scripts::MyModule::format_report($result);
 ```
 
 ### Registering in ScriptRegistry
 
 To add your module to the built-in script list, add an entry to `@SCRIPTS` in
-`lib/HBPerl/ScriptRegistry.pm`:
+`lib/BadgerOps/ScriptRegistry.pm`:
 
 ```perl
-['My Module', 'my_module.pl', 'HBPerl::Scripts::MyModule', 'Description', 'Category'],
+['My Module', 'my_module.pl', 'BadgerOps::Scripts::MyModule', 'Description', 'Category'],
 ```
 
 Available categories: System Info, Log Analysis, User Management, Network,
@@ -133,7 +133,7 @@ Security, Containers, Backup & Config.
 Scripts registered in ScriptRegistry can be run in batch mode via the CLI:
 
 ```bash
-hb_perl_cli batch system_info,disk_usage,my_module
+badgerops-cli batch system_info,disk_usage,my_module
 ```
 
 For this to work, your module must be loadable and export `run()` and
@@ -151,12 +151,12 @@ use Test::More;
 use FindBin qw($RealBin);
 use lib "$RealBin/../lib";
 
-use_ok('HBPerl::Scripts::MyModule');
+use_ok('BadgerOps::Scripts::MyModule');
 
-my $result = HBPerl::Scripts::MyModule::run();
+my $result = BadgerOps::Scripts::MyModule::run();
 is(ref $result, 'HASH', 'run returns hashref');
 
-my $report = HBPerl::Scripts::MyModule::format_report($result);
+my $report = BadgerOps::Scripts::MyModule::format_report($result);
 ok(length($report) > 0, 'report is non-empty');
 
 done_testing();

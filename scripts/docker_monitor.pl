@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use FindBin qw($RealBin);
 use lib "$RealBin/../lib";
-use HBPerl::Scripts::DockerMonitor;
+use BadgerOps::Scripts::DockerMonitor;
 
-my $result = HBPerl::Scripts::DockerMonitor::run();
-print HBPerl::Scripts::DockerMonitor::format_report($result);
+my $result = BadgerOps::Scripts::DockerMonitor::run();
+print BadgerOps::Scripts::DockerMonitor::format_report($result);

@@ -1,6 +1,6 @@
-# HB Perl Plugin System
+# BadgerOps Plugin System
 
-HB Perl v2.0 supports user-installable plugins that appear alongside the
+BadgerOps v2.0 supports user-installable plugins that appear alongside the
 20 built-in scripts in every interface (GUI, CLI, TUI).
 
 ---
@@ -23,13 +23,13 @@ HB Perl v2.0 supports user-installable plugins that appear alongside the
 Drop a `.pm` file into:
 
 ```
-~/.config/hb_perl/plugins/
+~/.config/badgerops/plugins/
 ```
 
-> **Custom base directory**: If the `HBPERL_HOME` environment variable is
-> set, plugins live in `$HBPERL_HOME/plugins/` instead.
+> **Custom base directory**: If the `BADGEROPS_HOME` environment variable is
+> set, plugins live in `$BADGEROPS_HOME/plugins/` instead.
 
-HB Perl discovers plugins automatically on startup — no registration step
+BadgerOps discovers plugins automatically on startup — no registration step
 is needed.  Restart the application (or press **Reload** in the GUI) for
 new plugins to appear.
 
@@ -50,7 +50,7 @@ A plugin is a plain Perl module (`.pm`) that exports three functions:
 
 Receives any keyword arguments the caller passes (the GUI/CLI may pass
 `run_timeout`).  Must return a **hashref**.  The hashref is opaque to
-HB Perl — you define its structure and consume it in `format_report`.
+BadgerOps — you define its structure and consume it in `format_report`.
 
 ### `format_report($result)`
 
@@ -75,7 +75,7 @@ sub metadata {
 }
 ```
 
-If `metadata()` is absent, HB Perl falls back to reading comment headers
+If `metadata()` is absent, BadgerOps falls back to reading comment headers
 from the top 30 lines of the file:
 
 ```perl
@@ -89,7 +89,7 @@ from the top 30 lines of the file:
 ## Minimal Example
 
 ```perl
-package HBPerl::Plugin::HelloWorld;
+package BadgerOps::Plugin::HelloWorld;
 use strict;
 use warnings;
 
@@ -99,7 +99,7 @@ use warnings;
 
 sub run {
     my (%args) = @_;
-    return { message => 'Hello from HB Perl!' };
+    return { message => 'Hello from BadgerOps!' };
 }
 
 sub format_report {
@@ -110,14 +110,14 @@ sub format_report {
 1;
 ```
 
-Save as `~/.config/hb_perl/plugins/HelloWorld.pm`.
+Save as `~/.config/badgerops/plugins/HelloWorld.pm`.
 
 ---
 
 ## Full Example with metadata()
 
 ```perl
-package HBPerl::Plugin::DiskQuota;
+package BadgerOps::Plugin::DiskQuota;
 use strict;
 use warnings;
 
@@ -175,19 +175,19 @@ sub format_report {
 
 ```bash
 # Disable a plugin (keeps the file, just hides it)
-hb_cli plugin disable DiskQuota
+badgerops-cli plugin disable DiskQuota
 
 # Re-enable it
-hb_cli plugin enable DiskQuota
+badgerops-cli plugin enable DiskQuota
 
 # List all plugins and their status
-hb_cli plugin list
+badgerops-cli plugin list
 ```
 
 ### Via config file
 
 Add the plugin base name (without `.pm`) to `disabled_plugins` in
-`~/.config/hb_perl/config.yml`:
+`~/.config/badgerops/config.yml`:
 
 ```yaml
 disabled_plugins:
@@ -201,38 +201,38 @@ disabled_plugins:
 
 ```bash
 # List installed plugins
-hb_cli plugin list
+badgerops-cli plugin list
 
 # Show metadata for a specific plugin
-hb_cli plugin info DiskQuota
+badgerops-cli plugin info DiskQuota
 
 # Run a plugin as you would any script
-hb_cli run DiskQuota
+badgerops-cli run DiskQuota
 
 # Include a plugin in a batch run
-hb_cli batch system_info,DiskQuota,disk_usage
+badgerops-cli batch system_info,DiskQuota,disk_usage
 
 # Export the batch as HTML
-hb_cli batch --export=html system_info,DiskQuota > report.html
+badgerops-cli batch --export=html system_info,DiskQuota > report.html
 ```
 
 ---
 
 ## Configuration
 
-Plugins can read the shared HB Perl config by importing `HBPerl::Config`:
+Plugins can read the shared BadgerOps config by importing `BadgerOps::Config`:
 
 ```perl
-use HBPerl::Config;
-HBPerl::Config::load();
-my $timeout = HBPerl::Config::get('script_timeout') // 30;
+use BadgerOps::Config;
+BadgerOps::Config::load();
+my $timeout = BadgerOps::Config::get('script_timeout') // 30;
 ```
 
 You can also store plugin-specific settings in the config under your own
 namespace key (prefix with your plugin name to avoid conflicts):
 
 ```yaml
-# ~/.config/hb_perl/config.yml
+# ~/.config/badgerops/config.yml
 DiskQuota_warn_threshold: 80
 ```
 
@@ -245,7 +245,7 @@ hashref during plugin initialisation, before the first `run()` call.
 
 - Plugin files are loaded with `require` — they execute arbitrary Perl code.
   **Only install plugins from sources you trust.**
-- HB Perl validates plugin filenames against `/\A[A-Za-z0-9_]+\.pm\z/` and
+- BadgerOps validates plugin filenames against `/\A[A-Za-z0-9_]+\.pm\z/` and
   rejects files whose names contain path separators or shell metacharacters.
 - Plugins lacking a `run()` function are silently skipped.
 - Disabled plugins are never loaded into memory; their files are ignored

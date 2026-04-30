@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to HB Perl are documented here.
+All notable changes to BadgerOps are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
@@ -10,25 +10,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 **Plugin System**
-- Drop-in plugin support: place `.pm` files in `~/.config/hb_perl/plugins/`
+- Drop-in plugin support: place `.pm` files in `~/.config/badgerops/plugins/`
 - Plugins are auto-discovered at startup with no registration required
 - Plugin API: `run()`, `format_report()`, `metadata()` (optional), `configure()` (optional)
 - Comment-header fallback (`# Name:`, `# Description:`, `# Category:`) for minimal plugins
-- `hb_cli plugin list|info|enable|disable` subcommands
+- `badgerops-cli plugin list|info|enable|disable` subcommands
 - `disabled_plugins` config key to hide plugins without deleting them
 - Plugins appear in the GUI sidebar, CLI list, and TUI menu alongside built-ins
 - See [docs/PLUGINS.md](docs/PLUGINS.md) for the full plugin authoring guide
 
 **Script Scheduling**
-- New `HBPerl::Scheduler` module — add/list/remove crontab entries for HB Perl scripts
-- `hb_cli schedule list|add|remove` subcommands
+- New `BadgerOps::Scheduler` module — add/list/remove crontab entries for BadgerOps scripts
+- `badgerops-cli schedule list|add|remove` subcommands
 - Input validation (script name regex, 5-field cron expression check) prevents injection
 
 **Batch Export**
 - `BatchRunner::export_report($results, format => 'html|json|text')` method
 - HTML export: self-contained document with inline dark-theme CSS
 - JSON export: structured output via `JSON::MaybeXS` with timestamp
-- CLI flag: `hb_cli batch --export=html|json <scripts>`
+- CLI flag: `badgerops-cli batch --export=html|json <scripts>`
 
 **Desktop Notifications**
 - `notify-send` integration after batch runs (non-blocking, best-effort)
@@ -42,14 +42,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 **CLI Improvements**
 - "Did you mean?" suggestion when an unknown script name is given (trigram similarity)
-- `hb_cli batch --export=FORMAT` flag for structured output
-- `hb_cli plugin` and `hb_cli schedule` subcommand groups
+- `badgerops-cli batch --export=FORMAT` flag for structured output
+- `badgerops-cli plugin` and `badgerops-cli schedule` subcommand groups
 - Help text updated to cover all new commands
 
 **Error Handling**
 - `Try::Tiny` added throughout: `App.pm`, `BatchRunner.pm`, `Runner.pm`
 - `Runner.pm`: pipe creation and `open3` call wrapped in `try/catch`
-- `Git.pm`: `_run_git()` emits debug warnings on non-zero exit / unexpected errors when `HBPERL_DEBUG=1`
+- `Git.pm`: `_run_git()` emits debug warnings on non-zero exit / unexpected errors when `BADGEROPS_DEBUG=1`
 
 **Timeout Protection**
 - `alarm()`-based run-timeout guard in `NetworkDiag`, `PortScanner`,
@@ -60,11 +60,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 **Configuration (schema v4)**
 - New keys: `notifications` (string), `disabled_plugins` (array), `dashboard_refresh_seconds` (integer)
 - Automatic migration from v3 configs sets sensible defaults for all three keys
-- `HBPERL_HOME` environment variable overrides `~/.config/hb_perl/` in both `Config.pm` and `ScriptRegistry.pm`
+- `BADGEROPS_HOME` environment variable overrides `~/.config/badgerops/` in both `Config.pm` and `ScriptRegistry.pm`
 
 **Script Discovery**
 - `ScriptRegistry` rewritten: auto-discovers built-in scripts by calling `metadata()` on each
-- User scripts loaded from `~/.config/hb_perl/scripts/*.pl` via comment-header parsing
+- User scripts loaded from `~/.config/badgerops/scripts/*.pl` via comment-header parsing
 - `find_closest($query)` — trigram similarity for "did you mean?" (threshold 0.4)
 - New exports: `find_closest`, `plugins_dir`, `invalidate_cache`
 - All 20 built-in `Scripts/*.pm` modules now export `metadata()`
@@ -81,14 +81,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `t/25_plugin_system.t` — 9 test groups: discovery, metadata, comment headers,
   API validation, security rejection, enable/disable
 - `t/26_scheduler.t` — 10 test groups with mocked crontab (no real system changes)
+- `t/27_mocked_system.t` — 20 tests for system-command-dependent scripts
+  (ServiceMonitor, DockerMonitor, PortScanner, NetworkDiag, BandwidthMonitor,
+  FirewallAuditor, SystemdAnalyzer, PackageAuditor) without a live Linux system
+- `t/28_gui_headless.t` — 30 tests: Config round-trips for GUI keys, ScriptRegistry
+  plugin install/discovery, Util::shell_quote, Scheduler input validation,
+  Runner and BatchRunner construction; all skipped gracefully without CPAN deps
 - `.github/workflows/test.yml` — matrix: Perl 5.28/5.36/5.38, cpanm caching,
   advisory `Perl::Critic` lint job
+
+### Fixed
+
+- `Dialogs.pm` Plugin Manager save loop: `iter_next($iter)` returns bool and
+  modifies `$iter` in-place in Gtk3-Perl; the assignment `$iter = ... ? $iter : undef`
+  was semantically wrong. Replaced with `last unless $plugin_store->iter_next($iter)`
+- `Dashboard.pm` config key mismatch: `dashboard_interval` → `dashboard_refresh_seconds`
 
 ### Changed
 
 - Minimum Perl version bumped from 5.16 to **5.28**
-- `HBPerl::Util::run_command($string)` now emits a `Carp::carp` deprecation
-  warning when `HBPERL_DEBUG=1` or `HBPERL_WARN_DEPRECATED=1` is set
+- `BadgerOps::Util::run_command($string)` now emits a `Carp::carp` deprecation
+  warning when `BADGEROPS_DEBUG=1` or `BADGEROPS_WARN_DEPRECATED=1` is set
   (will be removed in v3.0; use the list-form API instead)
 - `cpanfile` now declares `requires 'perl', '5.028'` and adds `Try::Tiny`
 - `Makefile.PL` sets `MIN_PERL_VERSION => '5.028'` and adds `Try::Tiny` to `PREREQ_PM`
@@ -96,7 +109,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Deprecated
 
-- `HBPerl::Util::run_command($string)` — single-string (shell-form) invocation is
+- `BadgerOps::Util::run_command($string)` — single-string (shell-form) invocation is
   deprecated; use the list-form `run_command(@list)` instead
 
 ---
@@ -107,18 +120,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Initial release: 20 bundled sysadmin scripts
 - GTK3 GUI with syntax-highlighted editor (GtkSourceView)
-- CLI (`hb_perl_cli`) with `list`, `run`, `batch`, `ide` subcommands
-- TUI (`hb_perl_tui`) with numbered script menu
+- CLI (`badgerops-cli`) with `list`, `run`, `batch`, `ide` subcommands
+- TUI (`badgerops-tui`) with numbered script menu
 - YAML-based config with schema migration
 - Async script runner with Glib IO watches
 - Sync runner with `IPC::Open3` and `IO::Select` deadlock avoidance
 - `BatchRunner` for sequential multi-script runs
-- Git status integration (`HBPerl::Git`)
+- Git status integration (`BadgerOps::Git`)
 - 12 tutorial POD files in `share/tutorials/`
 - 8 script templates in `share/templates/`
 - Dark/light/high-contrast/VSCode themes in `share/themes/`
 
 ---
 
-[2.0.0]: https://github.com/James-HoneyBadger/HB_Perl/compare/v1.0.0...v2.0.0
-[1.0.0]: https://github.com/James-HoneyBadger/HB_Perl/releases/tag/v1.0.0
+[2.0.0]: https://github.com/James-HoneyBadger/BadgerOps/compare/v1.0.0...v2.0.0
+[1.0.0]: https://github.com/James-HoneyBadger/BadgerOps/releases/tag/v1.0.0

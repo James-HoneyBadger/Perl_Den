@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # ============================================================================
-# t/14_script_registry.t — Test HBPerl::ScriptRegistry
+# t/14_script_registry.t — Test BadgerOps::ScriptRegistry
 # ============================================================================
 use strict;
 use warnings;
@@ -8,7 +8,7 @@ use Test::More;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 
-use_ok('HBPerl::ScriptRegistry', qw(script_index script_categories find_script));
+use_ok('BadgerOps::ScriptRegistry', qw(script_index script_categories find_script));
 
 subtest 'script_index returns all 20 scripts' => sub {
     my @scripts = script_index();
@@ -20,7 +20,7 @@ subtest 'script_index returns all 20 scripts' => sub {
         my ($name, $file, $module, $desc, $cat) = @$s;
         ok(length($name)   > 0, "name is non-empty: $name");
         like($file, qr/\.pl$/, "filename ends with .pl: $file");
-        like($module, qr/^HBPerl::Scripts::/, "module starts with HBPerl::Scripts: $module");
+        like($module, qr/^BadgerOps::Scripts::/, "module starts with BadgerOps::Scripts: $module");
         ok(length($desc)   > 0, "description is non-empty");
         ok(length($cat)    > 0, "category is non-empty");
     }

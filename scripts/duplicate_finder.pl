@@ -8,7 +8,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Getopt::Long;
-use HBPerl::Scripts::DuplicateFinder;
+use BadgerOps::Scripts::DuplicateFinder;
 
 my $min_size  = 1;
 my $max_depth;
@@ -28,9 +28,9 @@ if ($help) {
 
 my $dir = shift @ARGV // '.';
 
-my $result = HBPerl::Scripts::DuplicateFinder::run(
+my $result = BadgerOps::Scripts::DuplicateFinder::run(
     directory => $dir,
     min_size  => $min_size,
     max_depth => $max_depth,
 );
-print HBPerl::Scripts::DuplicateFinder::format_report($result);
+print BadgerOps::Scripts::DuplicateFinder::format_report($result);

@@ -8,7 +8,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Getopt::Long;
-use HBPerl::Scripts::NetworkDiag;
+use BadgerOps::Scripts::NetworkDiag;
 
 my $dns_host  = 'google.com';
 my $ping_host = '8.8.8.8';
@@ -26,8 +26,8 @@ if ($help) {
     exit 0;
 }
 
-my $result = HBPerl::Scripts::NetworkDiag::run(
+my $result = BadgerOps::Scripts::NetworkDiag::run(
     dns_host  => $dns_host,
     ping_host => $ping_host,
 );
-print HBPerl::Scripts::NetworkDiag::format_report($result);
+print BadgerOps::Scripts::NetworkDiag::format_report($result);

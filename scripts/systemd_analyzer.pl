@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use FindBin qw($RealBin);
 use lib "$RealBin/../lib";
-use HBPerl::Scripts::SystemdAnalyzer;
+use BadgerOps::Scripts::SystemdAnalyzer;
 
-my $result = HBPerl::Scripts::SystemdAnalyzer::run();
-print HBPerl::Scripts::SystemdAnalyzer::format_report($result);
+my $result = BadgerOps::Scripts::SystemdAnalyzer::run();
+print BadgerOps::Scripts::SystemdAnalyzer::format_report($result);
