@@ -126,6 +126,17 @@ EOF
     return $report;
 }
 
+sub metadata {
+    return {
+        name        => 'Process Manager',
+        filename    => 'process_manager.pl',
+        description => 'List and manage running processes',
+        category    => 'System Info',
+        icon        => 'computer-symbolic',
+        emoji       => '🖥',
+    };
+}
+
 1;
 
 __END__
@@ -163,6 +174,34 @@ Returns a hash-ref with process list, zombie list, and totals.
 =item B<format_report($result)>
 
 Format the hash-ref from C<run()> as a human-readable report string.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref with:
+
+=over 4
+
+=item C<processes>
+
+Arrayref of process hashrefs C<{ pid, name, user, cpu, mem, vsz, rss, stat, start, cmd }>.
+
+=item C<zombies>
+
+Arrayref of zombie process hashrefs (subset of C<processes> where state is C<Z>).
+
+=item C<high_cpu>
+
+Arrayref of processes with CPU usage above the threshold (default 5%).
+
+=item C<by_user>
+
+Hashref of username E<rarr> process count.
+
+=item C<total>
+
+Total number of processes returned.
 
 =back
 

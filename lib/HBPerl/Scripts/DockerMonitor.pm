@@ -171,6 +171,17 @@ sub _get_disk_usage {
     return \@lines;
 }
 
+sub metadata {
+    return {
+        name        => 'Docker Monitor',
+        filename    => 'docker_monitor.pl',
+        description => 'Container status, images, disk usage',
+        category    => 'Containers',
+        icon        => 'application-x-executable-symbolic',
+        emoji       => '🐳',
+    };
+}
+
 1;
 
 __END__
@@ -179,10 +190,64 @@ __END__
 
 HBPerl::Scripts::DockerMonitor - Docker container and image monitoring
 
+=head1 SYNOPSIS
+
+    use HBPerl::Scripts::DockerMonitor;
+    my $result = HBPerl::Scripts::DockerMonitor::run();
+    print HBPerl::Scripts::DockerMonitor::format_report($result);
+
 =head1 DESCRIPTION
 
 Reports on Docker containers (running/stopped), images, dangling images,
 volumes, and disk usage summary.
+
+=head1 EXPORTED FUNCTIONS
+
+=over 4
+
+=item B<run(%args)>
+
+Invokes the Docker CLI (C<docker ps>, C<docker images>, C<docker system df>)
+to collect container and image data.  Returns an empty result with
+C<available =E<gt> 0> if Docker is not installed.
+
+=item B<format_report($result)>
+
+Formats the Docker snapshot as a human-readable text report.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref with:
+
+=over 4
+
+=item C<available>
+
+Boolean — 1 if Docker is installed and reachable, 0 otherwise.
+
+=item C<containers>
+
+Arrayref of container info strings (C<docker ps -a --format>).
+
+=item C<images>
+
+Arrayref of image info strings.
+
+=item C<volumes>
+
+Arrayref of volume name strings.
+
+=item C<dangling>
+
+Arrayref of dangling image ID/size strings.
+
+=item C<disk_usage>
+
+Arrayref of C<docker system df> output lines.
+
+=back
 
 =head1 AUTHOR
 

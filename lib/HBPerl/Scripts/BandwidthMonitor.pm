@@ -7,8 +7,12 @@ use warnings;
 
 sub run {
     my (%args) = @_;
-    my $interval = $args{interval} // 2;    # seconds between samples
+    my $interval    = $args{interval}    // 2;    # seconds between samples
+    my $run_timeout = $args{run_timeout} // 60;
     my %result;
+
+    local $SIG{ALRM} = sub { die "BandwidthMonitor timed out after ${run_timeout}s\n" };
+    alarm($run_timeout);
 
     # Take two readings to calculate rates
     my $t1 = _read_proc_net_dev();
@@ -37,6 +41,7 @@ sub run {
     }
 
     $result{interval} = $interval;
+    alarm(0);
     return \%result;
 }
 
@@ -122,6 +127,18 @@ sub _human_rate {
     return _human_bytes($bytes_per_sec) . '/s';
 }
 
+sub metadata {
+    return {
+        name        => 'Bandwidth Monitor',
+        filename    => 'bandwidth_monitor.pl',
+        description => 'Per-interface network traffic rates',
+        category    => 'Network',
+        icon        => 'network-wired-symbolic',
+        emoji       => '🌐',
+        run_timeout => 60,
+    };
+}
+
 1;
 
 __END__
@@ -130,10 +147,48 @@ __END__
 
 HBPerl::Scripts::BandwidthMonitor - Per-interface network traffic monitoring
 
+=head1 SYNOPSIS
+
+    use HBPerl::Scripts::BandwidthMonitor;
+    my $result = HBPerl::Scripts::BandwidthMonitor::run(interval => 2);
+    print HBPerl::Scripts::BandwidthMonitor::format_report($result);
+
 =head1 DESCRIPTION
 
 Reads C</proc/net/dev> twice with a configurable interval to calculate
 per-interface receive/transmit rates, totals, and error counts.
+
+=head1 EXPORTED FUNCTIONS
+
+=over 4
+
+=item B<run(%args)>
+
+Accepts optional C<interval =E<gt> $seconds> (default 2).  Samples
+C</proc/net/dev> before and after sleeping for C<interval> seconds.
+
+=item B<format_report($result)>
+
+Formats the bandwidth data as a human-readable text table.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref with:
+
+=over 4
+
+=item C<interfaces>
+
+Arrayref of interface hashrefs, each containing: C<name>, C<rx_bytes>,
+C<tx_bytes>, C<rx_rate>, C<tx_rate>, C<rx_errors>, C<tx_errors>.
+
+=item C<interval>
+
+The sampling interval in seconds actually used.
+
+=back
 
 =head1 AUTHOR
 

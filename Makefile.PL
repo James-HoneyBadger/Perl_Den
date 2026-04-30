@@ -5,9 +5,10 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     NAME         => 'HBPerl',
     VERSION_FROM => 'lib/HBPerl/App.pm',
-    ABSTRACT     => 'HB Perl IDE - Linux Sysadmin Toolkit & Perl Development Environment',
+    ABSTRACT     => 'HB Perl IDE - Linux Sysadmin Toolkit & Perl Development Environment v2',
     AUTHOR       => 'James Temple <james@amiga-fan.net>',
     LICENSE      => 'mit',
+    MIN_PERL_VERSION => '5.028',
     EXE_FILES    => [
         'bin/hb_perl_ide',
         'bin/hb_perl_cli',
@@ -25,6 +26,7 @@ WriteMakefile(
         'YAML::XS'                    => '0.88',
         'JSON::MaybeXS'               => '1.004',
         'File::HomeDir'               => '1.006',
+        'Try::Tiny'                   => '0.31',
         'Perl::Tidy'                  => '20230309',
         'Perl::Critic'                => '1.152',
     },

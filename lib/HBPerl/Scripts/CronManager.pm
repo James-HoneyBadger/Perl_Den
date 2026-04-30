@@ -245,6 +245,17 @@ sub _slurp {
     return $c;
 }
 
+sub metadata {
+    return {
+        name        => 'Cron Manager',
+        filename    => 'cron_manager.pl',
+        description => 'View and manage cron jobs',
+        category    => 'User Management',
+        icon        => 'system-users-symbolic',
+        emoji       => '👤',
+    };
+}
+
 1;
 
 __END__
@@ -279,6 +290,34 @@ and systemd timers.
 =item B<format_report($result)>
 
 Format the hash-ref from C<run()> as a human-readable report string.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref with:
+
+=over 4
+
+=item C<user_crons>
+
+Hashref of username E<rarr> arrayref of crontab entry strings.
+
+=item C<system_crons>
+
+Arrayref of C</etc/cron.*> directory entry strings.
+
+=item C<cron_d>
+
+Hashref of filename E<rarr> arrayref of crontab entries in C</etc/cron.d/>.
+
+=item C<anacron>
+
+Arrayref of anacron job strings from C</etc/anacrontab>.
+
+=item C<timers>
+
+Arrayref of active systemd timer strings.
 
 =back
 

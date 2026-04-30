@@ -268,6 +268,17 @@ sub _rotate_backups {
 # _fmt_bytes is provided by HBPerl::Util::format_bytes
 sub _fmt_bytes { goto &format_bytes }
 
+sub metadata {
+    return {
+        name        => 'Backup Manager',
+        filename    => 'backup_manager.pl',
+        description => 'Create and manage backups',
+        category    => 'Backup & Config',
+        icon        => 'drive-harddisk-symbolic',
+        emoji       => '💾',
+    };
+}
+
 1;
 
 __END__
@@ -315,14 +326,32 @@ Format the hash-ref from C<run()> as a human-readable report string.
 
 =back
 
+=head1 RETURNS
+
+C<run()> returns a hashref. The populated keys depend on C<action>:
+
+=over 4
+
+=item C<action>
+
+The action that was performed: C<list>, C<create>, C<verify>, or C<rotate>.
+
+=item C<backups>
+
+(C<action=list>) Arrayref of backup file hashrefs C<{ path, size, mtime }>.
+
+=item C<backup>
+
+(C<action=create>) Hashref with C<path>, C<size>, and C<elapsed> keys.
+
+=item C<verify>
+
+(C<action=verify>) Hashref with C<path>, C<ok> (boolean), and optional C<error>.
+
+=item C<rotation>
+
+(C<action=rotate>) Hashref with C<removed> (count) and C<kept> (count).
+
+=back
+
 =head1 AUTHOR
-
-James Temple <james@amiga-fan.net>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (c) 2026 Honey Badger Universe
-
-MIT License
-
-=cut

@@ -126,6 +126,17 @@ sub _sha256 {
 # _fmt_bytes is provided by HBPerl::Util::format_bytes
 sub _fmt_bytes { goto &format_bytes }
 
+sub metadata {
+    return {
+        name        => 'Duplicate Finder',
+        filename    => 'duplicate_finder.pl',
+        description => 'Find duplicate files by hash',
+        category    => 'Backup & Config',
+        icon        => 'drive-harddisk-symbolic',
+        emoji       => '💾',
+    };
+}
+
 1;
 
 __END__
@@ -164,6 +175,31 @@ Returns a hash-ref with duplicate groups and totals.
 =item B<format_report($result)>
 
 Format the hash-ref from C<run()> as a human-readable report string.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref with:
+
+=over 4
+
+=item C<directory>
+
+The directory that was scanned.
+
+=item C<total_files> / C<files_hashed>
+
+Count of files examined and fully hashed.
+
+=item C<groups>
+
+Arrayref of C<{ hash, size, count, files }> hashrefs.  C<files> is an
+arrayref of duplicate path strings.
+
+=item C<wasted_bytes>
+
+Total bytes wasted by duplicates.
 
 =back
 

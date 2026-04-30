@@ -10,7 +10,7 @@ use Glib ('TRUE', 'FALSE');
 use Gtk3 -init;
 use Gtk3::SourceView;
 
-our $VERSION = '1.00';
+our $VERSION = '2.00';
 
 # Load Vte terminal widget via GObject Introspection
 eval {
@@ -25,6 +25,7 @@ my $HAS_VTE = !$@;
 use HBPerl::Config;
 use HBPerl::Util qw(find_share_dir);
 use HBPerl::GUI::MainWindow;
+use Try::Tiny;
 
 sub new {
     my ($class) = @_;
@@ -100,17 +101,16 @@ sub apply_theme {
 
     if (-f $css_file) {
         my $provider = Gtk3::CssProvider->new;
-        eval {
+        try {
             open my $fh, '<', $css_file or die "Cannot read $css_file: $!";
             local $/;
             my $css = <$fh>;
             close $fh;
             $provider->load_from_data($css);
-        };
-        if ($@) {
-            warn "CSS load error: $@\n";
+        } catch {
+            warn "CSS load error: $_\n";
             return;
-        }
+        };
         Gtk3::StyleContext::add_provider_for_screen(
             $screen,
             $provider,

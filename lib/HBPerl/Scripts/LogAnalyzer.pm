@@ -175,6 +175,17 @@ sub _find_syslog {
     return 'journalctl';
 }
 
+sub metadata {
+    return {
+        name        => 'Log Analyzer',
+        filename    => 'log_analyzer.pl',
+        description => 'Parse and analyze system logs',
+        category    => 'Log Analysis',
+        icon        => 'text-x-generic-symbolic',
+        emoji       => '📋',
+    };
+}
+
 1;
 
 __END__
@@ -214,6 +225,42 @@ and hourly distribution.
 =item B<format_report($result)>
 
 Format the hash-ref from C<run()> as a human-readable report string.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref.  On error only C<error> is set:
+
+=over 4
+
+=item C<error>
+
+Error message if the log could not be read or the pattern was invalid.
+
+=item C<log_file>
+
+Path to the log file, or C<'journalctl'>.
+
+=item C<total_entries>
+
+Number of log lines matched.
+
+=item C<entries>
+
+Arrayref of C<{ severity, source, message, raw }> hashrefs.
+
+=item C<severity_count>
+
+Hashref of severity label E<rarr> count.
+
+=item C<top_sources>
+
+Arrayref of the top 15 source names by frequency.
+
+=item C<hourly>
+
+Hashref of hour (0-23) E<rarr> event count.
 
 =back
 

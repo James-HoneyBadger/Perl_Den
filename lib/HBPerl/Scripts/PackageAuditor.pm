@@ -228,6 +228,17 @@ sub _get_recently_installed {
     return \@recent;
 }
 
+sub metadata {
+    return {
+        name        => 'Package Auditor',
+        filename    => 'package_auditor.pl',
+        description => 'Installed packages, updates, orphans',
+        category    => 'System Info',
+        icon        => 'computer-symbolic',
+        emoji       => '🖥',
+    };
+}
+
 1;
 
 __END__
@@ -236,11 +247,61 @@ __END__
 
 HBPerl::Scripts::PackageAuditor - System package auditing
 
+=head1 SYNOPSIS
+
+    use HBPerl::Scripts::PackageAuditor;
+    my $result = HBPerl::Scripts::PackageAuditor::run();
+    print HBPerl::Scripts::PackageAuditor::format_report($result);
+
 =head1 DESCRIPTION
 
 Detects the system package manager (dnf/apt/pacman/zypper), counts
 installed packages, checks for available updates, finds orphaned
 packages, and lists recently installed packages.
+
+=head1 EXPORTED FUNCTIONS
+
+=over 4
+
+=item B<run(%args)>
+
+Auto-detects the package manager and queries it for installed package
+counts, available updates, orphaned packages, and recently installed
+packages (last 20 by install date).
+
+=item B<format_report($result)>
+
+Formats the package audit data as a human-readable text report.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref with:
+
+=over 4
+
+=item C<pkg_manager>
+
+String: C<'apt'>, C<'dnf'>, C<'pacman'>, C<'zypper'>, or C<'unknown'>.
+
+=item C<installed>
+
+Integer count of installed packages.
+
+=item C<updates>
+
+Arrayref of update hashrefs C<{ name, current, available }>.
+
+=item C<orphaned>
+
+Arrayref of orphaned/auto-removable package name strings.
+
+=item C<recent>
+
+Arrayref of recently installed package name strings.
+
+=back
 
 =head1 AUTHOR
 

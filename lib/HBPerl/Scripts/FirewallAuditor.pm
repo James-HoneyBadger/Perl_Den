@@ -172,6 +172,17 @@ sub _find_unmatched_ports {
     return \@unmatched;
 }
 
+sub metadata {
+    return {
+        name        => 'Firewall Auditor',
+        filename    => 'firewall_auditor.pl',
+        description => 'Audit iptables/nftables firewall rules',
+        category    => 'Security',
+        icon        => 'security-high-symbolic',
+        emoji       => '🔒',
+    };
+}
+
 1;
 
 __END__
@@ -180,10 +191,56 @@ __END__
 
 HBPerl::Scripts::FirewallAuditor - Dump and analyze firewall rules
 
+=head1 SYNOPSIS
+
+    use HBPerl::Scripts::FirewallAuditor;
+    my $result = HBPerl::Scripts::FirewallAuditor::run();
+    print HBPerl::Scripts::FirewallAuditor::format_report($result);
+
 =head1 DESCRIPTION
 
 Collects iptables/nftables rules, detects the active firewall, and
 identifies listening ports that lack explicit firewall rules.
+
+=head1 EXPORTED FUNCTIONS
+
+=over 4
+
+=item B<run(%args)>
+
+Runs C<iptables-save> and C<nft list ruleset> (non-destructively), then
+cross-references listening ports from C<ss> against ACCEPT rules.
+
+=item B<format_report($result)>
+
+Formats the firewall audit as a human-readable text report.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref with:
+
+=over 4
+
+=item C<iptables>
+
+Hashref of chain name E<rarr> hashref with C<policy> and C<rules> arrayref.
+
+=item C<nftables>
+
+Raw C<nft list ruleset> output as a string, or empty string if unavailable.
+
+=item C<firewall_type>
+
+String: C<'iptables'>, C<'nftables'>, C<'both'>, or C<'none'>.
+
+=item C<unmatched_ports>
+
+Arrayref of hashrefs C<{ proto, port, process }> for ports that are
+listening but have no matching ACCEPT rule.
+
+=back
 
 =head1 AUTHOR
 

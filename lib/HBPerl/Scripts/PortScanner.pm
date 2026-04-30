@@ -8,10 +8,14 @@ use IO::Socket::INET;
 
 sub run {
     my (%args) = @_;
-    my $host       = $args{host}       // '127.0.0.1';
-    my $port_range = $args{port_range} // '1-1024';
-    my $timeout    = $args{timeout}    // 1;
-    my $mode       = $args{mode}       // 'listen';   # 'listen' or 'scan'
+    my $host        = $args{host}        // '127.0.0.1';
+    my $port_range  = $args{port_range}  // '1-1024';
+    my $timeout     = $args{timeout}     // 1;
+    my $mode        = $args{mode}        // 'listen';   # 'listen' or 'scan'
+    my $run_timeout = $args{run_timeout} // 30;
+
+    local $SIG{ALRM} = sub { die "PortScanner timed out after ${run_timeout}s\n" };
+    alarm($run_timeout);
 
     my %result;
 
@@ -30,6 +34,7 @@ sub run {
     # ── Well-known service info ──
     $result{service_map} = _service_map();
 
+    alarm(0);
     return \%result;
 }
 
@@ -245,6 +250,18 @@ sub _service_map {
     };
 }
 
+sub metadata {
+    return {
+        name        => 'Port Scanner',
+        filename    => 'port_scanner.pl',
+        description => 'Scan listening ports and services',
+        category    => 'Network',
+        icon        => 'network-wired-symbolic',
+        emoji       => '🌐',
+        run_timeout => 30,
+    };
+}
+
 1;
 
 __END__
@@ -283,6 +300,32 @@ Returns a hash-ref with listening ports, connections, and scan results.
 =item B<format_report($result)>
 
 Format the hash-ref from C<run()> as a human-readable report string.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref with:
+
+=over 4
+
+=item C<listening>
+
+Arrayref of listening port hashrefs C<{ proto, addr, port, process }>
+from C<ss -tulnp>.
+
+=item C<established>
+
+Arrayref of established connection hashrefs C<{ proto, local, remote, pid }>.
+
+=item C<scan>
+
+Present only when C<scan_range> is specified.  Arrayref of
+C<{ port, open, service }> hashrefs.
+
+=item C<service_map>
+
+Hashref of well-known port number (string) E<rarr> service name.
 
 =back
 

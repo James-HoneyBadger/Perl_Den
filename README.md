@@ -112,43 +112,38 @@ HB_Perl/
 │   ├── hb_perl_cli              #   CLI dispatcher
 │   ├── hb_perl_tui              #   Terminal UI
 │   └── hb_perl_ide              #   GTK3 IDE launcher
-├── lib/HBPerl/                  # Perl modules
+├── lib/HBPerl/                  # Core modules
 │   ├── App.pm                   #   GUI application controller
-│   ├── BatchRunner.pm           #   Batch/parallel script execution
-│   ├── Config.pm                #   YAML-based preferences & session
+│   ├── BatchRunner.pm           #   Batch script execution + HTML/JSON export
+│   ├── Config.pm                #   YAML config, schema v4, HBPERL_HOME support
 │   ├── Git.pm                   #   Git repository status with caching
-│   ├── Runner.pm                #   Non-blocking script execution
-│   ├── ScriptRegistry.pm        #   Canonical script index
+│   ├── Runner.pm                #   Non-blocking / sync script execution
+│   ├── ScriptRegistry.pm        #   Auto-discovery: built-ins + plugins + user scripts
+│   ├── Scheduler.pm             #   Crontab-based job scheduling
 │   ├── Util.pm                  #   Shared utilities
 │   ├── GUI/                     #   GTK3 GUI components
-│   │   ├── MainWindow.pm        #     Top-level window layout
-│   │   ├── Editor.pm            #     Tabbed code editor
-│   │   ├── Terminal.pm          #     VTE terminal + output panel
-│   │   ├── Toolbar.pm           #     Menu bar & quick toolbar
-│   │   ├── ScriptBrowser.pm     #     Sidebar script tree
-│   │   ├── Dashboard.pm         #     Live system overview
-│   │   └── Dialogs.pm           #     Preferences, About, etc.
-│   └── Scripts/                 #   Sysadmin tool modules (20)
+│   └── Scripts/                 #   20 sysadmin tool modules
 ├── scripts/                     # Standalone .pl script runners
 ├── share/
 │   ├── icons/                   # Application icons (SVG + PNG)
 │   ├── templates/               # New-file templates (8)
 │   ├── themes/                  # GTK CSS themes (5)
 │   └── tutorials/               # Perl tutorials (12 POD files)
-├── t/                           # Test suite (35 files, 299 tests)
+├── t/                           # Test suite (37 files)
 │   ├── unit/                    #   Unit tests
 │   ├── integration/             #   Integration tests
 │   └── fixtures/                #   Test data files
 ├── docs/
-│   ├── ENVIRONMENT.md           # Full environment specification
-│   └── CUSTOM_SCRIPTS.md        # Guide for writing custom scripts
-├── hb_gui                       # Shell wrapper → bin/hb_perl_ide
-├── hb_cli                       # Shell wrapper → bin/hb_perl_cli
-├── hb_tui                       # Shell wrapper → bin/hb_perl_tui
-├── hb_perl                      # Shell wrapper → bin/hb_perl_cli (alias)
+│   ├── ENVIRONMENT.md           # Distro-specific install guide
+│   ├── CUSTOM_SCRIPTS.md        # Guide for custom scripts and user scripts
+│   ├── PLUGINS.md               # Plugin authoring guide
+│   └── KEYBINDINGS.md           # GUI keyboard shortcut reference
+├── CHANGELOG.md                 # Full change history
+├── hb_gui / hb_cli / hb_tui    # Shell wrappers
+├── hb_perl                      # Shell wrapper → hb_perl_cli
 ├── _hb_env.sh                   # Environment bootstrap (PATH, PERL5LIB)
 ├── install_hb_perl_command.sh   # Install/uninstall shell commands
-├── .github/workflows/test.yml   # CI test workflow
+├── .github/workflows/test.yml   # CI: Perl 5.28/5.36/5.38 matrix
 ├── cpanfile                     # CPAN dependency declaration
 ├── Makefile.PL                  # ExtUtils::MakeMaker build
 └── LICENSE                      # MIT License
@@ -158,9 +153,10 @@ HB_Perl/
 
 ## Dependencies
 
-**Perl:** 5.26+  
-**System:** GTK3, VTE (≥ 2.91), GtkSourceView 3, systemd, iproute2, OpenSSL  
-**Fonts:** Noto (including emoji and CJK) for full Unicode support
+**Perl:** 5.28 or later  
+**System:** GTK3, VTE (≥ 2.91), GtkSourceView 3, systemd, iproute2, OpenSSL, libnotify  
+**CPAN:** Glib, Gtk3, YAML::XS, JSON::MaybeXS, Try::Tiny, File::HomeDir,
+  IO::Socket::SSL, Net::DNS, Proc::ProcessTable, Text::Diff
 
 See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) for complete specifications
 with exact versions and distro-specific install commands.
@@ -170,12 +166,13 @@ with exact versions and distro-specific install commands.
 ## Running Tests
 
 ```bash
-prove -l t/ t/unit/ t/integration/
+prove -l t/
 ```
 
-35 test files covering all 20 script modules, configuration, utilities,
-the script registry, batch runner, git integration, and the execution
-runner (299 tests).
+37 test files covering all 20 script modules, configuration, utilities,
+the script registry, plugin system, scheduler, batch runner, git
+integration, and the execution runner.  CI runs on Perl 5.28, 5.36, and
+5.38 via GitHub Actions.
 
 ---
 

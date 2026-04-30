@@ -189,6 +189,17 @@ sub _get_unit_counts {
     return \%counts;
 }
 
+sub metadata {
+    return {
+        name        => 'Systemd Analyzer',
+        filename    => 'systemd_analyzer.pl',
+        description => 'Boot time analysis, failed units',
+        category    => 'System Info',
+        icon        => 'computer-symbolic',
+        emoji       => '🖥',
+    };
+}
+
 1;
 
 __END__
@@ -197,10 +208,64 @@ __END__
 
 HBPerl::Scripts::SystemdAnalyzer - Systemd boot time and unit analysis
 
+=head1 SYNOPSIS
+
+    use HBPerl::Scripts::SystemdAnalyzer;
+    my $result = HBPerl::Scripts::SystemdAnalyzer::run();
+    print HBPerl::Scripts::SystemdAnalyzer::format_report($result);
+
 =head1 DESCRIPTION
 
 Uses C<systemd-analyze> and C<systemctl> to report boot times, identify
 the slowest-starting units, list failed units, and show active timers.
+Returns an empty result with C<available =E<gt> 0> if systemd is not running.
+
+=head1 EXPORTED FUNCTIONS
+
+=over 4
+
+=item B<run(%args)>
+
+Collects systemd boot analysis, blame output, failed units, and active
+timer schedules.  Safe to call as a non-root user.
+
+=item B<format_report($result)>
+
+Formats the systemd analysis as a human-readable text report.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref with:
+
+=over 4
+
+=item C<available>
+
+Boolean — 1 if systemd is the init system, 0 otherwise.
+
+=item C<boot_time>
+
+Hashref with C<kernel>, C<userspace>, and C<total> boot time strings.
+
+=item C<blame>
+
+Arrayref of the slowest-starting units C<{ time, unit }>.
+
+=item C<failed_units>
+
+Arrayref of unit name strings that are in a failed state.
+
+=item C<timers>
+
+Arrayref of active timer hashrefs C<{ next, timer, activates }>.
+
+=item C<unit_count>
+
+Hashref of unit state E<rarr> count (e.g. C<active>, C<inactive>, C<failed>).
+
+=back
 
 =head1 AUTHOR
 

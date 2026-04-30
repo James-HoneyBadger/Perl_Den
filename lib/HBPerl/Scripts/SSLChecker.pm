@@ -10,9 +10,13 @@ use POSIX qw(strftime);
 
 sub run {
     my (%args) = @_;
-    my $hosts   = $args{hosts}   // ['localhost'];
-    my $port    = $args{port}    // 443;
-    my $timeout = $args{timeout} // 10;
+    my $hosts       = $args{hosts}       // ['localhost'];
+    my $port        = $args{port}        // 443;
+    my $timeout     = $args{timeout}     // 10;
+    my $run_timeout = $args{run_timeout} // 60;
+
+    local $SIG{ALRM} = sub { die "SSLChecker timed out after ${run_timeout}s\n" };
+    alarm($run_timeout);
 
     my @results;
     for my $host (@$hosts) {
@@ -22,8 +26,9 @@ sub run {
     # ── Local certificate files ──
     my $local_certs = _scan_local_certs();
 
+    alarm(0);
     return {
-        checks     => \@results,
+        checks      => \@results,
         local_certs => $local_certs,
     };
 }
@@ -178,6 +183,18 @@ sub _scan_local_certs {
     return \@certs;
 }
 
+sub metadata {
+    return {
+        name        => 'SSL Checker',
+        filename    => 'ssl_checker.pl',
+        description => 'Check SSL certificate expiry',
+        category    => 'Network',
+        icon        => 'network-wired-symbolic',
+        emoji       => '🌐',
+        run_timeout => 60,
+    };
+}
+
 1;
 
 __END__
@@ -217,6 +234,24 @@ expiry information.
 =item B<format_report($result)>
 
 Format the hash-ref from C<run()> as a human-readable report string.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref with:
+
+=over 4
+
+=item C<checks>
+
+Arrayref of per-host hashrefs C<{ host, port, ok, days_remaining,
+subject, issuer, not_after, error }>.
+
+=item C<local_certs>
+
+Arrayref of local certificate file hashrefs C<{ path, subject,
+not_after, days_remaining, ok }>.
 
 =back
 

@@ -349,6 +349,17 @@ sub _get_banned_ips {
     return \@banned;
 }
 
+sub metadata {
+    return {
+        name        => 'Failed Login Detector',
+        filename    => 'failed_login_detector.pl',
+        description => 'Detect brute-force SSH attempts',
+        category    => 'Log Analysis',
+        icon        => 'text-x-generic-symbolic',
+        emoji       => '📋',
+    };
+}
+
 1;
 
 __END__
@@ -387,6 +398,39 @@ Returns a hash-ref with flagged IPs, users, and raw failures.
 =item B<format_report($result)>
 
 Format the hash-ref from C<run()> as a human-readable report string.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref with:
+
+=over 4
+
+=item C<total_failed> / C<total_success>
+
+Integer counts of failed and successful login attempts.
+
+=item C<by_ip> / C<by_user> / C<by_service>
+
+Hashrefs of IP/username/service E<rarr> fail count.
+
+=item C<flagged_ips> / C<flagged_users>
+
+Arrayrefs of IPs and usernames exceeding the brute-force threshold.
+
+=item C<banned>
+
+Arrayref of currently banned IPs (fail2ban/sshd).
+
+=item C<hours> / C<threshold>
+
+Look-back window and brute-force threshold used.
+
+=item C<recent>
+
+Arrayref of the last 20 event hashrefs
+C<{ time, user, ip, service, status }>.
 
 =back
 

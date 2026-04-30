@@ -9,8 +9,12 @@ use HBPerl::Util qw(format_bytes);
 
 sub run {
     my (%args) = @_;
-    my $dns_host  = $args{dns_host}  // 'google.com';
-    my $ping_host = $args{ping_host} // '8.8.8.8';
+    my $dns_host    = $args{dns_host}    // 'google.com';
+    my $ping_host   = $args{ping_host}   // '8.8.8.8';
+    my $run_timeout = $args{run_timeout} // 30;
+
+    local $SIG{ALRM} = sub { die "NetworkDiag timed out after ${run_timeout}s\n" };
+    alarm($run_timeout);
 
     my %result;
 
@@ -32,6 +36,7 @@ sub run {
     # ── Connectivity ──
     $result{gateway} = _get_default_gateway();
 
+    alarm(0);
     return \%result;
 }
 
@@ -220,6 +225,18 @@ sub _get_default_gateway {
 # _fmt_bytes is provided by HBPerl::Util::format_bytes
 sub _fmt_bytes { goto &format_bytes }
 
+sub metadata {
+    return {
+        name        => 'Network Diagnostics',
+        filename    => 'network_diag.pl',
+        description => 'DNS lookups, ping, interface info',
+        category    => 'Network',
+        icon        => 'network-wired-symbolic',
+        emoji       => '🌐',
+        run_timeout => 30,
+    };
+}
+
 1;
 
 __END__
@@ -258,6 +275,38 @@ connectivity results.
 =item B<format_report($result)>
 
 Format the hash-ref from C<run()> as a human-readable report string.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref with:
+
+=over 4
+
+=item C<interfaces>
+
+Arrayref of interface hashrefs C<{ name, addr, flags, mtu }>.
+
+=item C<routes>
+
+Arrayref of route strings from C<ip route>.
+
+=item C<dns>
+
+Hashref with C<host>, C<resolved> (arrayref of IPs), and optional C<error>.
+
+=item C<dns_servers>
+
+Arrayref of configured DNS server address strings.
+
+=item C<ping>
+
+Hashref with C<host>, C<alive> (boolean), and C<rtt_ms>.
+
+=item C<gateway>
+
+Default gateway IP string.
 
 =back
 

@@ -7,6 +7,8 @@ use warnings;
 use File::Basename qw(dirname);
 use Carp qw(carp);
 
+our $VERSION = '2.00';
+
 # TTL-based cache for git results (avoids repeated subprocess spawns)
 my %_cache;        # key => { value => ..., expires => time() + TTL }
 my $_cache_ttl = 2; # seconds
@@ -118,8 +120,17 @@ sub _run_git {
         local $/;
         my $out = <$fh>;
         close $fh;
-        return ($? == 0) ? $out : undef;
+        if ($? != 0) {
+            warn "Git: command '@args' failed (exit " . ($? >> 8) . ") in $dir\n"
+                if $ENV{HBPERL_DEBUG};
+            return undef;
+        }
+        return $out;
     };
+    if ($@) {
+        warn "Git: unexpected error running '@args' in $dir: $@\n"
+            if $ENV{HBPERL_DEBUG};
+    }
     return $output;
 }
 

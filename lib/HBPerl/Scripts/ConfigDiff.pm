@@ -272,6 +272,17 @@ sub _ensure_dir {
     File::Path::make_path($dir);
 }
 
+sub metadata {
+    return {
+        name        => 'Config Diff',
+        filename    => 'config_diff.pl',
+        description => 'Compare config files against baselines',
+        category    => 'Backup & Config',
+        icon        => 'drive-harddisk-symbolic',
+        emoji       => '💾',
+    };
+}
+
 1;
 
 __END__
@@ -311,6 +322,34 @@ Returns a hash-ref with C<success>, C<action>, and diff details.
 =item B<format_report($result)>
 
 Format the hash-ref from C<run()> as a human-readable report string.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref. Populated keys depend on C<action>:
+
+=over 4
+
+=item C<action>
+
+The action performed: C<baseline>, C<diff>, or C<status>.
+
+=item C<base_dir>
+
+Path to the directory storing baseline snapshots.
+
+=item C<baseline>
+
+(C<action=baseline>) Arrayref of C<{ file, sha256, saved_to }> records.
+
+=item C<diffs>
+
+(C<action=diff>) Arrayref of C<{ file, status, diff }> records.
+
+=item C<status>
+
+(C<action=status>) Arrayref of C<{ file, status, sha256 }> records.
 
 =back
 

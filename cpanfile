@@ -1,6 +1,9 @@
 # HB Perl IDE - Dependencies
 # Install with: cpanm --installdeps .
 
+# Minimum Perl version
+requires 'perl', '5.028';
+
 # ── GUI Toolkit ──
 requires 'Glib',                        '1.329';
 requires 'Glib::Object::Introspection', '0.049';
@@ -20,6 +23,9 @@ requires 'Text::Diff',                  '1.45';
 requires 'YAML::XS',                   '0.88';
 requires 'JSON::MaybeXS',              '1.004';
 requires 'File::HomeDir',              '1.006';
+
+# ── Error Handling ──
+requires 'Try::Tiny',                  '0.31';
 
 # ── Developer Tools ──
 requires 'Perl::Tidy',                 '20230309';

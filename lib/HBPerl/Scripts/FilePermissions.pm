@@ -181,6 +181,17 @@ EOF
     return $report;
 }
 
+sub metadata {
+    return {
+        name        => 'File Permissions',
+        filename    => 'file_permissions.pl',
+        description => 'Audit SUID/SGID/world-writable files',
+        category    => 'Security',
+        icon        => 'security-high-symbolic',
+        emoji       => '🔒',
+    };
+}
+
 1;
 
 __END__
@@ -219,6 +230,34 @@ Returns a hash-ref with categorised findings and counts.
 =item B<format_report($result)>
 
 Format the hash-ref from C<run()> as a human-readable report string.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref with:
+
+=over 4
+
+=item C<target>
+
+The directory scanned.
+
+=item C<suid_files> / C<sgid_files>
+
+Arrayrefs of path strings for SUID and SGID files.
+
+=item C<world_writable>
+
+Arrayref of world-writable file/directory paths.
+
+=item C<world_readable_sens>
+
+Arrayref of world-readable sensitive file paths (private keys, shadow files).
+
+=item C<no_owner>
+
+Arrayref of paths with no valid owner UID/GID.
 
 =back
 

@@ -106,6 +106,17 @@ EOF
 # _fmt_size is provided by HBPerl::Util::format_bytes
 sub _fmt_size { goto &format_bytes }
 
+sub metadata {
+    return {
+        name        => 'Disk Usage Analyzer',
+        filename    => 'disk_usage.pl',
+        description => 'Analyze disk usage by directory',
+        category    => 'System Info',
+        icon        => 'computer-symbolic',
+        emoji       => '🖥',
+    };
+}
+
 1;
 
 __END__
@@ -144,6 +155,30 @@ Returns a hash-ref with directory sizes and top files.
 =item B<format_report($result)>
 
 Format the hash-ref from C<run()> as a human-readable report string.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref with:
+
+=over 4
+
+=item C<target>
+
+The directory analysed (default C</>).
+
+=item C<total_size>
+
+Total size of C<target> in bytes.
+
+=item C<directories>
+
+Arrayref of C<{ path, size }> hashrefs sorted by size descending.
+
+=item C<large_files>
+
+Arrayref of C<{ path, size }> hashrefs for the largest individual files.
 
 =back
 

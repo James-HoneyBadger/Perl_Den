@@ -12,10 +12,10 @@ use Fcntl qw(:flock);
 use YAML::XS qw(LoadFile DumpFile);
 use Carp qw(carp);
 
-our $VERSION = '1.00';
+our $VERSION = '2.00';
 
 # Config schema version — bump when adding/removing/renaming keys
-our $CONFIG_SCHEMA_VERSION = 3;
+our $CONFIG_SCHEMA_VERSION = 4;
 
 our $CONFIG_DIR;
 our $CONFIG_FILE;
@@ -24,8 +24,15 @@ our $DATA = {};
 our $SESSION = {};
 
 sub _ensure_dir {
-    $CONFIG_DIR  //= File::HomeDir->my_home . '/.config/hb_perl';
-    $CONFIG_FILE //= "$CONFIG_DIR/config.yml";
+    # HBPERL_HOME overrides the default ~/.config/hb_perl base
+    my $base;
+    if ($ENV{HBPERL_HOME} && -d $ENV{HBPERL_HOME}) {
+        $base = $ENV{HBPERL_HOME};
+    } else {
+        $base = File::HomeDir->my_home . '/.config/hb_perl';
+    }
+    $CONFIG_DIR   //= $base;
+    $CONFIG_FILE  //= "$CONFIG_DIR/config.yml";
     $SESSION_FILE //= "$CONFIG_DIR/session.yml";
     make_path($CONFIG_DIR, { mode => 0700 }) unless -d $CONFIG_DIR;
 }
@@ -34,20 +41,23 @@ sub _ensure_dir {
 
 # Allowed config keys with types for validation
 my %CONFIG_SCHEMA = (
-    _config_version      => 'int',
-    theme                => 'string',
-    font                 => 'string',
-    tab_width            => 'int',
-    show_line_numbers    => 'bool',
-    highlight_line       => 'bool',
-    auto_indent          => 'bool',
-    word_wrap            => 'bool',
-    editor_scheme        => 'string',
-    terminal_scrollback  => 'int',
-    recent_files         => 'array',
-    dashboard_interval   => 'int',
-    privilege_tool       => 'string',
-    font_scale           => 'int',
+    _config_version          => 'int',
+    theme                    => 'string',
+    font                     => 'string',
+    tab_width                => 'int',
+    show_line_numbers        => 'bool',
+    highlight_line           => 'bool',
+    auto_indent              => 'bool',
+    word_wrap                => 'bool',
+    editor_scheme            => 'string',
+    terminal_scrollback      => 'int',
+    recent_files             => 'array',
+    dashboard_interval       => 'int',
+    dashboard_refresh_seconds => 'int',
+    privilege_tool           => 'string',
+    font_scale               => 'int',
+    notifications            => 'string',
+    disabled_plugins         => 'array',
 );
 
 sub load {
@@ -233,25 +243,35 @@ sub _migrate_config {
         $DATA->{font_scale} //= 100;
     }
 
+    # v3 → v4: add notifications, disabled_plugins, dashboard_refresh_seconds
+    if ($ver < 4) {
+        $DATA->{notifications}             //= 'errors';
+        $DATA->{disabled_plugins}          //= [];
+        $DATA->{dashboard_refresh_seconds} //= 5;
+    }
+
     $DATA->{_config_version} = $CONFIG_SCHEMA_VERSION;
 }
 
 # ── Internal: apply default values for missing keys ──
 
 sub _apply_defaults {
-    $DATA->{theme}               //= 'vscode-dark-plus';
-    $DATA->{font}                //= 'monospace 11';
-    $DATA->{tab_width}           //= 4;
-    $DATA->{show_line_numbers}   //= 1;
-    $DATA->{highlight_line}      //= 1;
-    $DATA->{auto_indent}         //= 1;
-    $DATA->{word_wrap}           //= 0;
-    $DATA->{editor_scheme}       //= 'oblivion';
-    $DATA->{terminal_scrollback} //= 10000;
-    $DATA->{recent_files}        //= [];
-    $DATA->{dashboard_interval}  //= 5;
-    $DATA->{privilege_tool}      //= 'auto';
-    $DATA->{font_scale}          //= 100;
+    $DATA->{theme}                    //= 'vscode-dark-plus';
+    $DATA->{font}                     //= 'monospace 11';
+    $DATA->{tab_width}                //= 4;
+    $DATA->{show_line_numbers}        //= 1;
+    $DATA->{highlight_line}           //= 1;
+    $DATA->{auto_indent}              //= 1;
+    $DATA->{word_wrap}                //= 0;
+    $DATA->{editor_scheme}            //= 'oblivion';
+    $DATA->{terminal_scrollback}      //= 10000;
+    $DATA->{recent_files}             //= [];
+    $DATA->{dashboard_interval}       //= 5;
+    $DATA->{dashboard_refresh_seconds} //= 5;
+    $DATA->{privilege_tool}           //= 'auto';
+    $DATA->{font_scale}               //= 100;
+    $DATA->{notifications}            //= 'errors';
+    $DATA->{disabled_plugins}         //= [];
 }
 
 # ── Internal: config validation ──

@@ -113,6 +113,17 @@ EOF
     return $report;
 }
 
+sub metadata {
+    return {
+        name        => 'Service Monitor',
+        filename    => 'service_monitor.pl',
+        description => 'Check systemd service status',
+        category    => 'System Info',
+        icon        => 'computer-symbolic',
+        emoji       => '🖥',
+    };
+}
+
 1;
 
 __END__
@@ -145,6 +156,30 @@ Returns a hash-ref with service list and failed-service count.
 =item B<format_report($result)>
 
 Format the hash-ref from C<run()> as a human-readable report string.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref with:
+
+=over 4
+
+=item C<services>
+
+Arrayref of service hashrefs C<{ name, active, sub, description }>.
+
+=item C<failed>
+
+Arrayref of failed service hashrefs (subset of C<services>).
+
+=item C<counts>
+
+Hashref of active-state E<rarr> count (e.g. C<active>, C<inactive>, C<failed>).
+
+=item C<total>
+
+Total number of services returned.
 
 =back
 

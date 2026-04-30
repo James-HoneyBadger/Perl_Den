@@ -16,8 +16,8 @@ my $CLI_BIN     = File::Spec->catfile($RealBin, 'hb_perl_cli');
 my $IDE_BIN     = File::Spec->catfile($RealBin, 'hb_perl_ide');
 my $PROGRAM     = $ENV{HB_LAUNCH_NAME} || basename($0);
 
-# Build tool list from shared registry
-my @TOOLS = map { [ $_->[0], $_->[1] ] } script_index();
+# Build tool list from shared registry: [display_name, filename, category, description]
+my @ALL_TOOLS = map { [ $_->[0], $_->[1], $_->[3] // '', $_->[4] // '' ] } script_index();
 
 sub _clear {
     print "\e[2J\e[H";
@@ -53,27 +53,59 @@ sub _run_tool {
 }
 
 sub _show_tool_menu {
+    my ($filter) = @_;
+    $filter //= '';
+
     while (1) {
+        # Apply filter
+        my @tools = $filter
+            ? grep { $_->[0] =~ /\Q$filter\E/i || $_->[3] =~ /\Q$filter\E/i } @ALL_TOOLS
+            : @ALL_TOOLS;
+
         _clear();
         _banner();
-        print "Select a toolkit script:\n\n";
 
-        for my $i (0 .. $#TOOLS) {
-            printf "  %2d) %s\n", $i + 1, $TOOLS[$i][0];
+        if ($filter) {
+            printf "Filter: \e[33m%s\e[0m  (%d result%s)\n\n",
+                $filter, scalar @tools, @tools == 1 ? '' : 's';
+        } else {
+            print "Select a toolkit script:\n\n";
         }
 
-        print "\n   b) Back\n";
+        if (!@tools) {
+            print "  (no scripts match)\n";
+        } else {
+            for my $i (0 .. $#tools) {
+                printf "  %2d) %-30s \e[2m%s\e[0m\n",
+                    $i + 1, $tools[$i][0], $tools[$i][2];
+            }
+        }
+
+        print "\n  [/] search  [c] clear filter  [b] back\n";
         print "\nChoice: ";
         my $line = <STDIN>;
         unless (defined $line) { print "\nGoodbye.\n"; exit 0 }
         chomp(my $choice = $line);
 
+        if ($choice eq '/') {
+            print "Search: ";
+            my $q = <STDIN>;
+            chomp $q if defined $q;
+            $filter = $q // '';
+            next;
+        }
+
+        if ($choice =~ /^[cC]$/) {
+            $filter = '';
+            next;
+        }
+
         if ($choice =~ /^[bB]$/) {
             return;
         }
 
-        if ($choice =~ /^\d+$/ && $choice >= 1 && $choice <= @TOOLS) {
-            _run_tool($TOOLS[$choice - 1][1]);
+        if ($choice =~ /^\d+$/ && @tools && $choice >= 1 && $choice <= @tools) {
+            _run_tool($tools[$choice - 1][1]);
             next;
         }
 
@@ -106,10 +138,11 @@ while (1) {
     _clear();
     _banner();
     print "Main Menu\n\n";
-    print "  1) Run toolkit scripts\n";
+    printf "  1) Run toolkit scripts  (%d available)\n", scalar @ALL_TOOLS;
     print "  2) List scripts (CLI)\n";
     print "  3) Launch IDE\n";
     print "  4) Exit\n";
+    print "\n  Tip: choose 1 then type / to search/filter scripts\n";
     print "\nChoice: ";
     my $line = <STDIN>;
     unless (defined $line) { print "\nGoodbye.\n"; exit 0 }

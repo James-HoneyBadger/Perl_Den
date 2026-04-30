@@ -10,7 +10,7 @@ use POSIX qw(strftime);
 use Carp qw(carp);
 use Exporter 'import';
 
-our $VERSION = '1.00';
+our $VERSION = '2.00';
 our @EXPORT_OK = qw(
     format_bytes  format_number  timestamp  trim
     run_command   run_command_list  run_command_sudo
@@ -68,6 +68,10 @@ sub trim {
 
 sub run_command {
     my ($cmd) = @_;
+    # DEPRECATED: use run_command_list() to avoid shell injection risks.
+    # This function will be removed in v3.0.
+    Carp::carp('HBPerl::Util::run_command($string) is deprecated; use run_command_list(@cmd) instead')
+        if $ENV{HBPERL_DEBUG} || $ENV{HBPERL_WARN_DEPRECATED};
     my $output = '';
     my $pid = open(my $fh, '-|', 'bash', '-c', "$cmd 2>&1");
     if ($pid) {

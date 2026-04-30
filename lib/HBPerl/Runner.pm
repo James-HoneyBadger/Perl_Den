@@ -13,8 +13,9 @@ use IPC::Open3;
 use Symbol 'gensym';
 use Glib ('TRUE', 'FALSE');
 use HBPerl::Config;
+use Try::Tiny;
 
-our $VERSION = '1.00';
+our $VERSION = '2.00';
 
 sub new {
     my ($class, %args) = @_;
@@ -52,11 +53,22 @@ sub run_script {
     }
 
     # Create pipes for STDOUT and STDERR
-    pipe(my $stdout_r, my $stdout_w) or die "pipe: $!";
-    pipe(my $stderr_r, my $stderr_w) or die "pipe: $!";
+    my ($stdout_r, $stdout_w, $stderr_r, $stderr_w);
+    try {
+        pipe($stdout_r, $stdout_w) or die "pipe (stdout): $!";
+        pipe($stderr_r, $stderr_w) or die "pipe (stderr): $!";
+    } catch {
+        die "Runner: could not create pipes: $_";
+    };
 
-    my $pid = fork();
-    die "fork: $!" unless defined $pid;
+    my $pid;
+    try {
+        $pid = fork();
+        die "fork: $!" unless defined $pid;
+    } catch {
+        close $_ for ($stdout_r, $stdout_w, $stderr_r, $stderr_w);
+        die "Runner: $_";
+    };
 
     if ($pid == 0) {
         # ── Child process ──
@@ -176,7 +188,13 @@ sub run_sync {
     @command = ('bash', '-c', $command[0]) if @command == 1;
 
     my $stderr_fh = gensym;
-    my $pid = open3(my $stdin_fh, my $stdout_fh, $stderr_fh, @command);
+    my ($pid, $stdout_fh, $stdin_fh);
+    try {
+        $stdin_fh  = gensym;
+        $pid = open3($stdin_fh, $stdout_fh, $stderr_fh, @command);
+    } catch {
+        return ('', "Runner: failed to spawn command: $_", 127);
+    };
     close $stdin_fh;
 
     # Read both streams concurrently via IO::Select to avoid deadlock

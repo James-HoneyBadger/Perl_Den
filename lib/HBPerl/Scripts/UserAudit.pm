@@ -201,6 +201,17 @@ EOF
     return $report;
 }
 
+sub metadata {
+    return {
+        name        => 'User Audit',
+        filename    => 'user_audit.pl',
+        description => 'Audit user accounts and security',
+        category    => 'User Management',
+        icon        => 'system-users-symbolic',
+        emoji       => '👤',
+    };
+}
+
 1;
 
 __END__
@@ -234,6 +245,42 @@ warnings, and login history.
 =item B<format_report($result)>
 
 Format the hash-ref from C<run()> as a human-readable report string.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref with:
+
+=over 4
+
+=item C<users>
+
+Arrayref of all user hashrefs C<{ name, uid, gid, home, shell, gecos }>.
+
+=item C<login_users>
+
+Subset of users with interactive login shells.
+
+=item C<warnings>
+
+Arrayref of human-readable warning strings (duplicate UIDs, etc.).
+
+=item C<no_password> / C<locked>
+
+Arrayrefs of usernames with empty or locked passwords.
+
+=item C<sudoers>
+
+Arrayref of usernames with sudo/wheel group membership.
+
+=item C<last_logins>
+
+Arrayref of recent login strings from C<last>.
+
+=item C<uid0_accounts>
+
+Arrayref of non-root usernames with UID 0.
 
 =back
 

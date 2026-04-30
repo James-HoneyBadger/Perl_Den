@@ -222,6 +222,17 @@ sub _get_network_interfaces {
     return \@interfaces;
 }
 
+sub metadata {
+    return {
+        name        => 'System Information',
+        filename    => 'system_info.pl',
+        description => 'Collect CPU, RAM, kernel, uptime info',
+        category    => 'System Info',
+        icon        => 'computer-symbolic',
+        emoji       => '🖥',
+    };
+}
+
 1;
 
 __END__
@@ -255,6 +266,39 @@ No parameters required.  Returns a hash-ref with system metrics.
 
 Format the hash-ref from C<run()> as a human-readable report string.
 If called with no argument, calls C<run()> internally.
+
+=back
+
+=head1 RETURNS
+
+C<run()> returns a hashref with:
+
+=over 4
+
+=item C<hostname> / C<os> / C<kernel>
+
+System hostname, OS name/version string, and kernel version.
+
+=item C<cpu>
+
+Hashref with C<model>, C<cores>, C<threads>, and C<load_avg> (arrayref of
+1/5/15-min load averages).
+
+=item C<memory>
+
+Hashref with C<total_kb>, C<free_kb>, C<available_kb>, C<cached_kb>.
+
+=item C<uptime>
+
+Hashref with C<seconds>, C<human> (e.g. C<'3 days, 4 hours'>).
+
+=item C<disks>
+
+Arrayref of disk hashrefs C<{ device, mount, total, used, free, pct }>.
+
+=item C<network>
+
+Arrayref of interface hashrefs C<{ name, addr, flags }>.
 
 =back
 
