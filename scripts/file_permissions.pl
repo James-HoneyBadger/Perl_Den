@@ -8,7 +8,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Getopt::Long;
-use BadgerOps::Scripts::FilePermissions;
+use PerlDen::Scripts::FilePermissions;
 
 my $help;
 my $dir       = shift @ARGV // $ENV{HOME} // '.';
@@ -25,8 +25,8 @@ if ($help) {
     exit 0;
 }
 
-my $result = BadgerOps::Scripts::FilePermissions::run(
+my $result = PerlDen::Scripts::FilePermissions::run(
     directory => $dir,
     max_depth => $max_depth,
 );
-print BadgerOps::Scripts::FilePermissions::format_report($result);
+print PerlDen::Scripts::FilePermissions::format_report($result);

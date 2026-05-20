@@ -1,16 +1,16 @@
-# Writing Custom BadgerOps Scripts
+# Writing Custom Perl Den Scripts
 
-This guide explains how to create your own sysadmin scripts that integrate with the BadgerOps IDE.
+This guide explains how to create your own sysadmin scripts that integrate with the Perl Den IDE.
 
 ## Quick Start
 
-1. Copy the template: `share/templates/badgerops_module.pl`
-2. Save it to `~/.config/badgerops/scripts/your_script.pl`
+1. Copy the template: `share/templates/perlden_module.pl`
+2. Save it to `~/.config/perlden/scripts/your_script.pl`
 3. Restart the IDE — your script appears in the **User Scripts** category
 
 ## Script Convention
 
-Every BadgerOps script follows a two-function pattern:
+Every Perl Den script follows a two-function pattern:
 
 ```perl
 sub run {
@@ -50,7 +50,7 @@ EOF
 
 ## Auto-Registration
 
-The IDE automatically discovers scripts in `~/.config/badgerops/scripts/`.
+The IDE automatically discovers scripts in `~/.config/perlden/scripts/`.
 
 ### Metadata Headers
 
@@ -75,14 +75,14 @@ If omitted, the filename is used as the display name.
 For reusable scripts, create a proper Perl module:
 
 ```
-lib/BadgerOps/Scripts/MyModule.pm    # Module with run() and format_report()
+lib/PerlDen/Scripts/MyModule.pm    # Module with run() and format_report()
 scripts/my_module.pl               # Thin wrapper that calls the module
 ```
 
 ### Module Pattern
 
 ```perl
-package BadgerOps::Scripts::MyModule;
+package PerlDen::Scripts::MyModule;
 use strict;
 use warnings;
 
@@ -110,19 +110,19 @@ use strict;
 use warnings;
 use FindBin qw($RealBin);
 use lib "$RealBin/../lib";
-use BadgerOps::Scripts::MyModule;
+use PerlDen::Scripts::MyModule;
 
-my $result = BadgerOps::Scripts::MyModule::run();
-print BadgerOps::Scripts::MyModule::format_report($result);
+my $result = PerlDen::Scripts::MyModule::run();
+print PerlDen::Scripts::MyModule::format_report($result);
 ```
 
 ### Registering in ScriptRegistry
 
 To add your module to the built-in script list, add an entry to `@SCRIPTS` in
-`lib/BadgerOps/ScriptRegistry.pm`:
+`lib/PerlDen/ScriptRegistry.pm`:
 
 ```perl
-['My Module', 'my_module.pl', 'BadgerOps::Scripts::MyModule', 'Description', 'Category'],
+['My Module', 'my_module.pl', 'PerlDen::Scripts::MyModule', 'Description', 'Category'],
 ```
 
 Available categories: System Info, Log Analysis, User Management, Network,
@@ -133,7 +133,7 @@ Security, Containers, Backup & Config.
 Scripts registered in ScriptRegistry can be run in batch mode via the CLI:
 
 ```bash
-badgerops-cli batch system_info,disk_usage,my_module
+perlden-cli batch system_info,disk_usage,my_module
 ```
 
 For this to work, your module must be loadable and export `run()` and
@@ -151,12 +151,12 @@ use Test::More;
 use FindBin qw($RealBin);
 use lib "$RealBin/../lib";
 
-use_ok('BadgerOps::Scripts::MyModule');
+use_ok('PerlDen::Scripts::MyModule');
 
-my $result = BadgerOps::Scripts::MyModule::run();
+my $result = PerlDen::Scripts::MyModule::run();
 is(ref $result, 'HASH', 'run returns hashref');
 
-my $report = BadgerOps::Scripts::MyModule::format_report($result);
+my $report = PerlDen::Scripts::MyModule::format_report($result);
 ok(length($report) > 0, 'report is non-empty');
 
 done_testing();

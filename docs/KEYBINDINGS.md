@@ -1,6 +1,6 @@
-# BadgerOps Keyboard Shortcuts
+# Perl Den Keyboard Shortcuts
 
-This reference lists all keyboard shortcuts available in the GTK3 GUI (`badgerops-gui`).
+This reference lists all keyboard shortcuts available in the GTK3 GUI (`perlden-gui`).
 
 ---
 
@@ -8,7 +8,7 @@ This reference lists all keyboard shortcuts available in the GTK3 GUI (`badgerop
 
 | Shortcut | Action |
 |---|---|
-| `Ctrl+Q` | Quit BadgerOps |
+| `Ctrl+Q` | Quit Perl Den |
 | `F1` | Open Help / About dialog |
 | `Ctrl+,` | Open Preferences dialog |
 
@@ -92,27 +92,27 @@ This reference lists all keyboard shortcuts available in the GTK3 GUI (`badgerop
 
 ## CLI Quick Reference
 
-The CLI (`badgerops-cli`) has no interactive shortcuts, but useful invocations:
+The CLI (`perlden-cli`) has no interactive shortcuts, but useful invocations:
 
 ```bash
 # Run with typo correction ("did you mean?")
-badgerops-cli run sytm_info
+perlden-cli run sytm_info
 
 # Batch run with JSON export
-badgerops-cli batch --export=json system_info,disk_usage,service_monitor
+perlden-cli batch --export=json system_info,disk_usage,service_monitor
 
 # Plugin management
-badgerops-cli plugin list
-badgerops-cli plugin disable MyPlugin
+perlden-cli plugin list
+perlden-cli plugin disable MyPlugin
 
 # Schedule a script
-badgerops-cli schedule add disk_usage '0 * * * *'
-badgerops-cli schedule list
+perlden-cli schedule add disk_usage '0 * * * *'
+perlden-cli schedule list
 ```
 
 ## TUI Quick Reference
 
-Inside the TUI script menu (`badgerops-tui`):
+Inside the TUI script menu (`perlden-tui`):
 
 | Key | Action |
 |---|---|

@@ -8,7 +8,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Getopt::Long;
-use BadgerOps::Scripts::DiskUsage;
+use PerlDen::Scripts::DiskUsage;
 
 my $dir       = shift @ARGV // '.';
 my $depth     = 3;
@@ -29,10 +29,10 @@ if ($help) {
     exit 0;
 }
 
-my $result = BadgerOps::Scripts::DiskUsage::run(
+my $result = PerlDen::Scripts::DiskUsage::run(
     target    => $dir,
     max_depth => $depth,
     min_size  => $min_size,
     top_n     => $top,
 );
-print BadgerOps::Scripts::DiskUsage::format_report($result);
+print PerlDen::Scripts::DiskUsage::format_report($result);

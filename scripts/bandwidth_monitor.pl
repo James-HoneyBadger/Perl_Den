@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use FindBin qw($RealBin);
 use lib "$RealBin/../lib";
-use BadgerOps::Scripts::BandwidthMonitor;
+use PerlDen::Scripts::BandwidthMonitor;
 
-my $result = BadgerOps::Scripts::BandwidthMonitor::run(interval => 2);
-print BadgerOps::Scripts::BandwidthMonitor::format_report($result);
+my $result = PerlDen::Scripts::BandwidthMonitor::run(interval => 2);
+print PerlDen::Scripts::BandwidthMonitor::format_report($result);

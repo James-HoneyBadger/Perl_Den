@@ -1,6 +1,6 @@
-# BadgerOps IDE — Linux Environment Specification
+# Perl Den IDE — Linux Environment Specification
 
-Complete specification of the runtime environment required by BadgerOps IDE.  
+Complete specification of the runtime environment required by Perl Den IDE.  
 Reference platform: **Arch Linux ARM aarch64** (rolling release).
 
 ---
@@ -189,7 +189,7 @@ sudo dnf install google-noto-fonts-common google-noto-emoji-fonts google-noto-sa
 | `noto-fonts-extra`    | Additional scripts (Georgian, Armenian, Tibetan, etc.)    |
 | `ttf-freefont`        | Broad Unicode fallback coverage (GNU FreeFont)            |
 
-### Unicode Characters Used by BadgerOps
+### Unicode Characters Used by Perl Den
 
 | Character(s)          | Location                       | Purpose                    |
 |-----------------------|--------------------------------|----------------------------|
@@ -264,9 +264,9 @@ The toolkit scripts shell out to these Linux commands. All must be on `$PATH`.
 ### Application Layout
 
 ```
-BadgerOps/                     # Project root ($BADGEROPS_ROOT_DIR)
-├── bin/                     # Perl entry points (badgerops-cli, badgerops-tui, badgerops-ide)
-├── lib/BadgerOps/              # Perl modules
+Perl Den/                     # Project root ($PERLDEN_ROOT_DIR)
+├── bin/                     # Perl entry points (perlden-cli, perlden-tui, perlden-ide)
+├── lib/PerlDen/              # Perl modules
 │   ├── App.pm               # GUI application controller
 │   ├── BatchRunner.pm       # Batch/parallel script execution
 │   ├── Config.pm            # YAML-based config persistence
@@ -288,7 +288,7 @@ BadgerOps/                     # Project root ($BADGEROPS_ROOT_DIR)
 │   └── fixtures/            # Test data files
 ├── docs/                    # Documentation
 ├── .github/workflows/       # CI configuration
-├── _badgerops_env.sh               # Environment bootstrap
+├── _perlden_env.sh               # Environment bootstrap
 ├── cpanfile                  # CPAN dependency declaration
 └── Makefile.PL               # Build system
 ```
@@ -297,10 +297,10 @@ BadgerOps/                     # Project root ($BADGEROPS_ROOT_DIR)
 
 | Path                                  | Purpose                            |
 |---------------------------------------|-------------------------------------|
-| `~/.config/badgerops/`                 | Config directory (auto-created)     |
-| `~/.config/badgerops/config.yml`       | User preferences (theme, font, etc.)|
-| `~/.config/badgerops/session.yml`      | Session state (window size, tabs)   |
-| `~/.config/badgerops/baselines/`       | ConfigDiff baseline copies          |
+| `~/.config/perlden/`                 | Config directory (auto-created)     |
+| `~/.config/perlden/config.yml`       | User preferences (theme, font, etc.)|
+| `~/.config/perlden/session.yml`      | Session state (window size, tabs)   |
+| `~/.config/perlden/baselines/`       | ConfigDiff baseline copies          |
 
 ### System Paths Read by Scripts
 
@@ -329,17 +329,17 @@ BadgerOps/                     # Project root ($BADGEROPS_ROOT_DIR)
 
 ## 8. Environment Variables
 
-Set automatically by `_badgerops_env.sh` when launching via the wrapper scripts.
+Set automatically by `_perlden_env.sh` when launching via the wrapper scripts.
 
 | Variable              | Value                              | Purpose                       |
 |-----------------------|------------------------------------|-------------------------------|
-| `BADGEROPS_ROOT_DIR`        | Project root (auto-detected)       | Base path for all lookups     |
-| `BADGEROPS_SHARE_DIR`  | `$BADGEROPS_ROOT_DIR/share`              | Templates, themes, tutorials  |
-| `BADGEROPS_SCRIPTS_DIR`| `$BADGEROPS_ROOT_DIR/scripts`            | Toolkit script directory      |
-| `BADGEROPS_LAUNCH_NAME`     | `basename $0` of wrapper script    | Display name in CLI/TUI help  |
-| `PERL5LIB`           | Prepended with `$BADGEROPS_ROOT_DIR/lib` | Module resolution             |
-| `PATH`               | Prepended with `$BADGEROPS_ROOT_DIR/bin` | Command resolution            |
-| `DISPLAY` / `WAYLAND_DISPLAY` | (system-set)            | Required for GUI mode (also required for `badgerops-ide --version` due to compile-time `Gtk3 -init`) |
+| `PERLDEN_ROOT_DIR`        | Project root (auto-detected)       | Base path for all lookups     |
+| `PERLDEN_SHARE_DIR`  | `$PERLDEN_ROOT_DIR/share`              | Templates, themes, tutorials  |
+| `PERLDEN_SCRIPTS_DIR`| `$PERLDEN_ROOT_DIR/scripts`            | Toolkit script directory      |
+| `PERLDEN_LAUNCH_NAME`     | `basename $0` of wrapper script    | Display name in CLI/TUI help  |
+| `PERL5LIB`           | Prepended with `$PERLDEN_ROOT_DIR/lib` | Module resolution             |
+| `PATH`               | Prepended with `$PERLDEN_ROOT_DIR/bin` | Command resolution            |
+| `DISPLAY` / `WAYLAND_DISPLAY` | (system-set)            | Required for GUI mode (also required for `perlden-ide --version` due to compile-time `Gtk3 -init`) |
 
 ---
 
@@ -360,16 +360,16 @@ fc-cache -f
 cpanm --installdeps .
 
 # 4. Verify
-perl -c lib/BadgerOps/App.pm       # Compile check
+perl -c lib/PerlDen/App.pm       # Compile check
 prove -l t/00_compile.t          # Module compile test
 
-# 5. Install commands (optional — adds badgerops, badgerops-cli, etc. to PATH)
-./install_badgerops_command.sh --user
+# 5. Install commands (optional — adds perlden, perlden-cli, etc. to PATH)
+./install_perlden_command.sh --user
 
 # 6. Launch
-./badgerops-gui                        # GTK3 IDE
-./badgerops-cli list                   # CLI — list scripts
-./badgerops-tui                        # Terminal UI
+./perlden-gui                        # GTK3 IDE
+./perlden-cli list                   # CLI — list scripts
+./perlden-tui                        # Terminal UI
 ```
 
 ### Debian / Ubuntu (Full Setup)

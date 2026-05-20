@@ -8,7 +8,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Getopt::Long;
-use BadgerOps::Scripts::PortScanner;
+use PerlDen::Scripts::PortScanner;
 
 my $host    = '127.0.0.1';
 my $range   = '1-1024';
@@ -30,10 +30,10 @@ if ($help) {
     exit 0;
 }
 
-my $result = BadgerOps::Scripts::PortScanner::run(
+my $result = PerlDen::Scripts::PortScanner::run(
     host       => $host,
     port_range => $range,
     timeout    => $timeout,
     mode       => $scan ? 'scan' : 'listen',
 );
-print BadgerOps::Scripts::PortScanner::format_report($result);
+print PerlDen::Scripts::PortScanner::format_report($result);

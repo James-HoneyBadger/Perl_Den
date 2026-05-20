@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # ============================================================================
-# t/05_process_manager.t — Test BadgerOps::Scripts::ProcessManager
+# t/05_process_manager.t — Test PerlDen::Scripts::ProcessManager
 # ============================================================================
 use strict;
 use warnings;
@@ -8,10 +8,10 @@ use Test::More;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 
-use_ok('BadgerOps::Scripts::ProcessManager');
+use_ok('PerlDen::Scripts::ProcessManager');
 
 subtest 'run returns process data' => sub {
-    my $result = BadgerOps::Scripts::ProcessManager::run(top_n => 5);
+    my $result = PerlDen::Scripts::ProcessManager::run(top_n => 5);
     ok(ref $result eq 'HASH', 'returns hashref');
     ok(exists $result->{processes}, 'has processes key');
     ok(ref $result->{processes} eq 'ARRAY', 'processes is array');
@@ -19,7 +19,7 @@ subtest 'run returns process data' => sub {
 };
 
 subtest 'process entry has expected fields' => sub {
-    my $r = BadgerOps::Scripts::ProcessManager::run(top_n => 1);
+    my $r = PerlDen::Scripts::ProcessManager::run(top_n => 1);
     my $proc = $r->{processes}[0];
     ok(defined $proc, 'got a process');
     for my $key (qw(user pid cpu mem command)) {
@@ -28,8 +28,8 @@ subtest 'process entry has expected fields' => sub {
 };
 
 subtest 'format_report works' => sub {
-    my $r = BadgerOps::Scripts::ProcessManager::run(top_n => 5);
-    my $report = BadgerOps::Scripts::ProcessManager::format_report($r);
+    my $r = PerlDen::Scripts::ProcessManager::run(top_n => 5);
+    my $report = PerlDen::Scripts::ProcessManager::format_report($r);
     ok(length($report) > 50, 'report has content');
     like($report, qr/PROCESS/, 'report mentions processes');
 };

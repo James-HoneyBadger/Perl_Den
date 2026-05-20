@@ -1,0 +1,271 @@
+#!/usr/bin/perl
+# ============================================================================
+# HB Perl TUI - Terminal UI launcher for HB Perl toolkit
+# ============================================================================
+use strict;
+use warnings;
+use utf8;
+use FindBin qw($RealBin);
+use lib "$RealBin/../lib";
+use File::Basename qw(basename);
+use File::Spec;
+use PerlDen::ScriptRegistry qw(script_index find_closest);
+
+my $SCRIPTS_DIR = File::Spec->catdir($RealBin, '..', 'scripts');
+my $CLI_BIN     = File::Spec->catfile($RealBin, 'perlden-cli');
+my $IDE_BIN     = File::Spec->catfile($RealBin, 'perlden-ide');
+my $PROGRAM     = $ENV{HB_LAUNCH_NAME} || basename($0);
+
+# Build tool list from shared registry: [display_name, filename, description, category]
+my @ALL_TOOLS = map { [ $_->[0], $_->[1], $_->[3] // '', $_->[4] // '' ] } script_index();
+
+use constant PAGE_SIZE => 20;
+my @HISTORY;  # [ { name, exit_code, timestamp }, ... ]  — capped at 10
+
+sub _clear {
+    print "\e[2J\e[H";
+}
+
+sub _banner {
+    print "=============================================\n";
+    print "           HB Perl Toolkit (TUI)            \n";
+    print "=============================================\n\n";
+}
+
+sub _pause {
+    print "\nPress Enter to continue... ";
+    scalar <STDIN>;
+}
+
+sub _run_tool {
+    my ($script) = @_;
+    my $path = File::Spec->catfile($SCRIPTS_DIR, $script);
+
+    if (!-f $path) {
+        print "\n[ERROR] Script not found: $path\n";
+        _pause();
+        return 127;
+    }
+
+    print "\nRunning: $script\n";
+    print "---------------------------------------------\n\n";
+    system($^X, $path);
+    my $exit_code = ($? >> 8) // 0;
+    print "\n---------------------------------------------\n";
+    print "Exit code: $exit_code\n";
+    _pause();
+    return $exit_code;
+}
+
+sub _show_tool_menu {
+    my ($filter) = @_;
+    $filter //= '';
+    my $page = 0;
+
+    while (1) {
+        # Apply filter: substring first, fuzzy fallback when nothing matches
+        my @tools;
+        if ($filter) {
+            @tools = grep { $_->[0] =~ /\Q$filter\E/i || $_->[2] =~ /\Q$filter\E/i } @ALL_TOOLS;
+            if (!@tools) {
+                my $closest = find_closest($filter);
+                @tools = grep { $_->[0] eq ($closest // '') } @ALL_TOOLS if $closest;
+            }
+        } else {
+            @tools = @ALL_TOOLS;
+        }
+
+        # Pagination
+        my $total = scalar @tools;
+        my $total_pages = int(($total + PAGE_SIZE - 1) / PAGE_SIZE) || 1;
+        $page = 0                if $page < 0;
+        $page = $total_pages - 1 if $page >= $total_pages;
+        my $start      = $page * PAGE_SIZE;
+        my $end        = $start + PAGE_SIZE - 1;
+        $end           = $#tools if $end > $#tools;
+        my @page_tools = @tools[$start .. $end];
+
+        _clear();
+        _banner();
+
+        if ($filter) {
+            printf "Filter: \e[33m%s\e[0m  (%d result%s)\n\n",
+                $filter, $total, $total == 1 ? '' : 's';
+        } else {
+            print "Select a toolkit script:\n\n";
+        }
+
+        if (!@tools) {
+            print "  (no scripts match)\n";
+        } else {
+            for my $i (0 .. $#page_tools) {
+                printf "  %2d) %-30s \e[2m%s\e[0m\n",
+                    $start + $i + 1, $page_tools[$i][0], $page_tools[$i][2];
+            }
+        }
+
+        if ($total_pages > 1) {
+            printf "\n  \e[2mPage %d/%d\e[0m  [n] next  [p] prev\n", $page + 1, $total_pages;
+        }
+        print "\n  [/] search  [c] clear filter  [h] history  [b] back\n";
+        print "\nChoice: ";
+
+        my $line = <STDIN>;
+        unless (defined $line) { print "\nGoodbye.\n"; exit 0 }
+        chomp(my $choice = $line);
+
+        if ($choice eq '/') {
+            print "Search: ";
+            my $q = <STDIN>;
+            chomp $q if defined $q;
+            $filter = $q // '';
+            $page   = 0;
+            next;
+        }
+        if ($choice =~ /^[cC]$/) { $filter = ''; $page = 0; next }
+        if ($choice =~ /^[bB]$/) { return }
+        if ($choice =~ /^[nN]$/) { $page++ if $page < $total_pages - 1; next }
+        if ($choice =~ /^[pP]$/) { $page-- if $page > 0;               next }
+        if ($choice =~ /^[hH]$/) { _show_history(); next }
+
+        if ($choice =~ /^\d+$/ && @tools && $choice >= 1 && $choice <= $total) {
+            my $tool = $tools[$choice - 1];
+            # Show description before running
+            print "\n\e[2mInfo: $tool->[2]\e[0m\n" if $tool->[2];
+            my $exit_code = _run_tool($tool->[1]);
+            # Record in history (capped at 10)
+            unshift @HISTORY, {
+                name      => $tool->[0],
+                exit_code => $exit_code,
+                timestamp => scalar localtime,
+            };
+            splice @HISTORY, 10 if @HISTORY > 10;
+            next;
+        }
+
+        print "\nInvalid selection.\n";
+        _pause();
+    }
+}
+
+sub _show_history {
+    _clear();
+    _banner();
+    print "Recent executions:\n\n";
+    if (!@HISTORY) {
+        print "  (no history yet)\n";
+    } else {
+        for my $i (0 .. $#HISTORY) {
+            my $h      = $HISTORY[$i];
+            my $status = $h->{exit_code} == 0
+                ? "\e[32m\x{2713}\e[0m"
+                : "\e[31m\x{2717} (exit $h->{exit_code})\e[0m";
+            printf "  %2d) %-30s %s  %s\n",
+                $i + 1, $h->{name}, $status, $h->{timestamp};
+        }
+    }
+    _pause();
+}
+
+sub _help {
+    print <<HELP;
+HB Perl TUI
+
+Menu options:
+  1) Run toolkit scripts
+  2) List scripts (via CLI)
+  3) Launch IDE
+  4) Exit
+
+You can also run:
+    $PROGRAM --help
+HELP
+}
+
+if (grep { $_ eq '--help' || $_ eq '-h' } @ARGV) {
+    _help();
+    exit 0;
+}
+
+while (1) {
+    _clear();
+    _banner();
+    print "Main Menu\n\n";
+    printf "  1) Run toolkit scripts  (%d available)\n", scalar @ALL_TOOLS;
+    print "  2) List scripts (CLI)\n";
+    print "  3) Launch IDE\n";
+    print "  4) Exit\n";
+    print "\n  Tip: choose 1 then type / to search/filter scripts\n";
+    print "\nChoice: ";
+    my $line = <STDIN>;
+    unless (defined $line) { print "\nGoodbye.\n"; exit 0 }
+    chomp(my $choice = $line);
+
+    if ($choice eq '1') {
+        _show_tool_menu();
+        next;
+    }
+    elsif ($choice eq '2') {
+        _clear();
+        _banner();
+        if (-x $CLI_BIN) {
+            system($CLI_BIN, 'list');
+        } else {
+            print "perlden-cli not found at: $CLI_BIN\n";
+        }
+        _pause();
+        next;
+    }
+    elsif ($choice eq '3') {
+        exec $^X, $IDE_BIN;
+        die "Failed to launch IDE: $!";
+    }
+    elsif ($choice eq '4' || $choice =~ /^[qQ]$/) {
+        print "\nGoodbye.\n";
+        exit 0;
+    }
+
+    print "\nInvalid selection.\n";
+    _pause();
+}
+
+__END__
+
+=head1 NAME
+
+perlden-tui - Terminal UI menu for the HB Perl toolkit
+
+=head1 SYNOPSIS
+
+    perlden-tui [--help]
+
+=head1 DESCRIPTION
+
+An interactive, full-screen terminal menu that lets you browse and run
+the 15 bundled sysadmin scripts, list them, or launch the GTK IDE.
+Navigate with number keys; press C<b> to go back.
+
+=head1 MENUS
+
+=over 4
+
+=item B<Main menu>
+
+1) Run toolkit scripts  2) List scripts (CLI)  3) Launch IDE  4) Exit
+
+=item B<Script menu>
+
+Lists all toolkit scripts by number.  Select one to run it in the
+terminal and display exit status.
+
+=back
+
+=head1 AUTHOR
+
+James
+
+=head1 LICENSE
+
+MIT
+
+=cut

@@ -9,33 +9,33 @@ use FindBin;
 use lib "$FindBin::Bin/../lib";
 
 my @modules = qw(
-    BadgerOps::Config
-    BadgerOps::Util
-    BadgerOps::Runner
-    BadgerOps::BatchRunner
-    BadgerOps::ScriptRegistry
-    BadgerOps::Git
-    BadgerOps::Scheduler
-    BadgerOps::Scripts::SystemInfo
-    BadgerOps::Scripts::DiskUsage
-    BadgerOps::Scripts::ProcessManager
-    BadgerOps::Scripts::ServiceMonitor
-    BadgerOps::Scripts::FilePermissions
-    BadgerOps::Scripts::LogAnalyzer
-    BadgerOps::Scripts::UserAudit
-    BadgerOps::Scripts::NetworkDiag
-    BadgerOps::Scripts::PortScanner
-    BadgerOps::Scripts::BackupManager
-    BadgerOps::Scripts::DuplicateFinder
-    BadgerOps::Scripts::CronManager
-    BadgerOps::Scripts::SSLChecker
-    BadgerOps::Scripts::ConfigDiff
-    BadgerOps::Scripts::FailedLoginDetector
-    BadgerOps::Scripts::DockerMonitor
-    BadgerOps::Scripts::BandwidthMonitor
-    BadgerOps::Scripts::FirewallAuditor
-    BadgerOps::Scripts::PackageAuditor
-    BadgerOps::Scripts::SystemdAnalyzer
+    PerlDen::Config
+    PerlDen::Util
+    PerlDen::Runner
+    PerlDen::BatchRunner
+    PerlDen::ScriptRegistry
+    PerlDen::Git
+    PerlDen::Scheduler
+    PerlDen::Scripts::SystemInfo
+    PerlDen::Scripts::DiskUsage
+    PerlDen::Scripts::ProcessManager
+    PerlDen::Scripts::ServiceMonitor
+    PerlDen::Scripts::FilePermissions
+    PerlDen::Scripts::LogAnalyzer
+    PerlDen::Scripts::UserAudit
+    PerlDen::Scripts::NetworkDiag
+    PerlDen::Scripts::PortScanner
+    PerlDen::Scripts::BackupManager
+    PerlDen::Scripts::DuplicateFinder
+    PerlDen::Scripts::CronManager
+    PerlDen::Scripts::SSLChecker
+    PerlDen::Scripts::ConfigDiff
+    PerlDen::Scripts::FailedLoginDetector
+    PerlDen::Scripts::DockerMonitor
+    PerlDen::Scripts::BandwidthMonitor
+    PerlDen::Scripts::FirewallAuditor
+    PerlDen::Scripts::PackageAuditor
+    PerlDen::Scripts::SystemdAnalyzer
 );
 
 plan tests => scalar @modules;

@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # ============================================================================
-# t/07_network_diag.t — Test BadgerOps::Scripts::NetworkDiag
+# t/07_network_diag.t — Test PerlDen::Scripts::NetworkDiag
 # ============================================================================
 use strict;
 use warnings;
@@ -8,10 +8,10 @@ use Test::More;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 
-use_ok('BadgerOps::Scripts::NetworkDiag');
+use_ok('PerlDen::Scripts::NetworkDiag');
 
 subtest 'run returns network data' => sub {
-    my $result = BadgerOps::Scripts::NetworkDiag::run(
+    my $result = PerlDen::Scripts::NetworkDiag::run(
         ping_host => '127.0.0.1',
         dns_host  => 'localhost',
     );
@@ -23,14 +23,14 @@ subtest 'run returns network data' => sub {
 };
 
 subtest 'localhost ping should succeed' => sub {
-    my $r = BadgerOps::Scripts::NetworkDiag::run(ping_host => '127.0.0.1');
+    my $r = PerlDen::Scripts::NetworkDiag::run(ping_host => '127.0.0.1');
     ok($r->{ping}, 'ping result exists');
     ok($r->{ping}{success}, 'localhost ping succeeded');
 };
 
 subtest 'format_report works' => sub {
-    my $r = BadgerOps::Scripts::NetworkDiag::run(ping_host => '127.0.0.1');
-    my $report = BadgerOps::Scripts::NetworkDiag::format_report($r);
+    my $r = PerlDen::Scripts::NetworkDiag::run(ping_host => '127.0.0.1');
+    my $report = PerlDen::Scripts::NetworkDiag::format_report($r);
     ok(length($report) > 50, 'report has content');
     like($report, qr/NETWORK/i, 'report has network header');
 };

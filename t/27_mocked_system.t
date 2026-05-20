@@ -16,7 +16,7 @@ my $HAVE_MOCK = eval { require Test::MockModule; 1 };
 
 # ── 1. ServiceMonitor — format_report with hand-crafted data ──────────────
 
-use_ok('BadgerOps::Scripts::ServiceMonitor');
+use_ok('PerlDen::Scripts::ServiceMonitor');
 
 subtest 'ServiceMonitor format_report with mock data' => sub {
     my $result = {
@@ -36,7 +36,7 @@ subtest 'ServiceMonitor format_report with mock data' => sub {
         total  => 3,
     };
 
-    my $report = BadgerOps::Scripts::ServiceMonitor::format_report($result);
+    my $report = PerlDen::Scripts::ServiceMonitor::format_report($result);
     ok(length($report) > 50, 'report has content');
     like($report, qr/sshd\.service/,   'report lists sshd');
     like($report, qr/broken\.service/, 'report lists broken service');
@@ -53,19 +53,19 @@ subtest 'ServiceMonitor format_report with no failed services' => sub {
         counts => { active => 1 },
         total  => 1,
     };
-    my $report = BadgerOps::Scripts::ServiceMonitor::format_report($result);
+    my $report = PerlDen::Scripts::ServiceMonitor::format_report($result);
     ok(length($report) > 20, 'report generated');
     like($report, qr/nginx/i, 'report mentions nginx');
 };
 
 # ── 2. DockerMonitor — mock private helpers ───────────────────────────────
 
-use_ok('BadgerOps::Scripts::DockerMonitor');
+use_ok('PerlDen::Scripts::DockerMonitor');
 
 subtest 'DockerMonitor run() with mocked helpers (docker available)' => sub {
     plan(skip_all => 'Test::MockModule not available') unless $HAVE_MOCK;
 
-    my $mock = Test::MockModule->new('BadgerOps::Scripts::DockerMonitor');
+    my $mock = Test::MockModule->new('PerlDen::Scripts::DockerMonitor');
 
     $mock->mock(_docker_available  => sub { 1 });
     $mock->mock(_get_containers    => sub {
@@ -87,13 +87,13 @@ subtest 'DockerMonitor run() with mocked helpers (docker available)' => sub {
     $mock->mock(_get_disk_usage    => sub { return ['TYPE  TOTAL  ACTIVE  SIZE  RECLAIMABLE',
                                                     'Images 2  1  507MB  374MB (73%)'] });
 
-    my $result = BadgerOps::Scripts::DockerMonitor::run();
+    my $result = PerlDen::Scripts::DockerMonitor::run();
     ok($result->{available}, 'docker available flag set');
     is(scalar @{$result->{containers}}, 2, 'got 2 containers');
     is($result->{containers}[0]{name}, 'web', 'first container is web');
     is(scalar @{$result->{images}}, 2, 'got 2 images');
 
-    my $report = BadgerOps::Scripts::DockerMonitor::format_report($result);
+    my $report = PerlDen::Scripts::DockerMonitor::format_report($result);
     like($report, qr/nginx/,    'report mentions nginx');
     like($report, qr/postgres/, 'report mentions postgres');
     like($report, qr/Exited/,   'report shows exited container');
@@ -102,14 +102,14 @@ subtest 'DockerMonitor run() with mocked helpers (docker available)' => sub {
 subtest 'DockerMonitor run() with mocked helpers (docker unavailable)' => sub {
     plan(skip_all => 'Test::MockModule not available') unless $HAVE_MOCK;
 
-    my $mock = Test::MockModule->new('BadgerOps::Scripts::DockerMonitor');
+    my $mock = Test::MockModule->new('PerlDen::Scripts::DockerMonitor');
     $mock->mock(_docker_available => sub { 0 });
 
-    my $result = BadgerOps::Scripts::DockerMonitor::run();
+    my $result = PerlDen::Scripts::DockerMonitor::run();
     ok(!$result->{available}, 'available is false');
     ok(!exists $result->{containers}, 'no containers key when unavailable');
 
-    my $report = BadgerOps::Scripts::DockerMonitor::format_report($result);
+    my $report = PerlDen::Scripts::DockerMonitor::format_report($result);
     like($report, qr/not installed|not running/i, 'report explains docker unavailability');
 };
 
@@ -122,13 +122,13 @@ subtest 'DockerMonitor format_report with dangling images' => sub {
         dangling   => ['sha256:deadbeef1234 45MB', 'sha256:cafebabe5678 12MB'],
         disk_usage => [],
     };
-    my $report = BadgerOps::Scripts::DockerMonitor::format_report($result);
+    my $report = PerlDen::Scripts::DockerMonitor::format_report($result);
     like($report, qr/Dangling|dangling|prune/i, 'report mentions dangling images');
 };
 
 # ── 3. PortScanner — format_report with hand-crafted data ────────────────
 
-use_ok('BadgerOps::Scripts::PortScanner');
+use_ok('PerlDen::Scripts::PortScanner');
 
 subtest 'PortScanner format_report with mock data' => sub {
     my $result = {
@@ -144,7 +144,7 @@ subtest 'PortScanner format_report with mock data' => sub {
         scan        => undef,
     };
 
-    my $report = BadgerOps::Scripts::PortScanner::format_report($result);
+    my $report = PerlDen::Scripts::PortScanner::format_report($result);
     ok(length($report) > 50, 'report has content');
     like($report, qr/:22.*SSH|SSH.*22/s, 'report shows SSH on port 22');
     like($report, qr/:80.*HTTP|HTTP.*80/s, 'report shows HTTP on port 80');
@@ -152,7 +152,7 @@ subtest 'PortScanner format_report with mock data' => sub {
 
 # ── 4. NetworkDiag — format_report with hand-crafted data ────────────────
 
-use_ok('BadgerOps::Scripts::NetworkDiag');
+use_ok('PerlDen::Scripts::NetworkDiag');
 
 subtest 'NetworkDiag format_report with mock data' => sub {
     my $result = {
@@ -171,7 +171,7 @@ subtest 'NetworkDiag format_report with mock data' => sub {
         ping       => { host => '127.0.0.1', success => 1, avg_ms => 0.2 },
     };
 
-    my $report = BadgerOps::Scripts::NetworkDiag::format_report($result);
+    my $report = PerlDen::Scripts::NetworkDiag::format_report($result);
     ok(length($report) > 50, 'report has content');
     like($report, qr/eth0|192\.168/, 'report shows interface info');
     like($report, qr/8\.8\.8\.8/,   'report shows DNS servers');
@@ -179,7 +179,7 @@ subtest 'NetworkDiag format_report with mock data' => sub {
 
 # ── 5. BandwidthMonitor — format_report with hand-crafted data ───────────
 
-use_ok('BadgerOps::Scripts::BandwidthMonitor');
+use_ok('PerlDen::Scripts::BandwidthMonitor');
 
 subtest 'BandwidthMonitor format_report with mock data' => sub {
     my $result = {
@@ -194,7 +194,7 @@ subtest 'BandwidthMonitor format_report with mock data' => sub {
         ],
     };
 
-    my $report = BadgerOps::Scripts::BandwidthMonitor::format_report($result);
+    my $report = PerlDen::Scripts::BandwidthMonitor::format_report($result);
     ok(length($report) > 30, 'report has content');
     like($report, qr/eth0/,            'report shows eth0');
     like($report, qr/Bandwidth|BANDWIDTH|RX|TX/i, 'report has bandwidth headers');
@@ -202,7 +202,7 @@ subtest 'BandwidthMonitor format_report with mock data' => sub {
 
 # ── 6. FirewallAuditor — format_report with hand-crafted data ────────────
 
-use_ok('BadgerOps::Scripts::FirewallAuditor');
+use_ok('PerlDen::Scripts::FirewallAuditor');
 
 subtest 'FirewallAuditor format_report with mock data' => sub {
     my $result = {
@@ -216,7 +216,7 @@ subtest 'FirewallAuditor format_report with mock data' => sub {
         unmatched_ports => [],
     };
 
-    my $report = BadgerOps::Scripts::FirewallAuditor::format_report($result);
+    my $report = PerlDen::Scripts::FirewallAuditor::format_report($result);
     ok(length($report) > 30, 'report has content');
     like($report, qr/iptables|INPUT/i, 'report mentions firewall rules');
     like($report, qr/22/,              'report shows port 22 rule');
@@ -224,7 +224,7 @@ subtest 'FirewallAuditor format_report with mock data' => sub {
 
 # ── 7. SystemdAnalyzer — format_report with hand-crafted data ────────────
 
-use_ok('BadgerOps::Scripts::SystemdAnalyzer');
+use_ok('PerlDen::Scripts::SystemdAnalyzer');
 
 subtest 'SystemdAnalyzer format_report with mock data' => sub {
     my $result = {
@@ -244,7 +244,7 @@ subtest 'SystemdAnalyzer format_report with mock data' => sub {
         ],
     };
 
-    my $report = BadgerOps::Scripts::SystemdAnalyzer::format_report($result);
+    my $report = PerlDen::Scripts::SystemdAnalyzer::format_report($result);
     ok(length($report) > 50, 'report has content');
     like($report, qr/12\.345s/,   'report shows boot time');
     like($report, qr/NetworkManager/, 'report shows blame entries');
@@ -252,13 +252,13 @@ subtest 'SystemdAnalyzer format_report with mock data' => sub {
 
 subtest 'SystemdAnalyzer format_report when systemd unavailable' => sub {
     my $result = { available => 0 };
-    my $report = BadgerOps::Scripts::SystemdAnalyzer::format_report($result);
+    my $report = PerlDen::Scripts::SystemdAnalyzer::format_report($result);
     like($report, qr/not available|systemd/i, 'report explains systemd unavailability');
 };
 
 # ── 8. PackageAuditor — format_report with hand-crafted data ─────────────
 
-use_ok('BadgerOps::Scripts::PackageAuditor');
+use_ok('PerlDen::Scripts::PackageAuditor');
 
 subtest 'PackageAuditor format_report with mock data' => sub {
     my $result = {
@@ -274,7 +274,7 @@ subtest 'PackageAuditor format_report with mock data' => sub {
         ],
     };
 
-    my $report = BadgerOps::Scripts::PackageAuditor::format_report($result);
+    my $report = PerlDen::Scripts::PackageAuditor::format_report($result);
     ok(length($report) > 50, 'report has content');
     like($report, qr/pacman|linux|glibc/i, 'report shows package info');
     like($report, qr/orphan|python-six/i,  'report shows orphaned packages');

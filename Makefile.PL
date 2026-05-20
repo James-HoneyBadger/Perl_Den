@@ -3,16 +3,16 @@ use warnings;
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
-    NAME         => 'BadgerOps',
-    VERSION_FROM => 'lib/BadgerOps/App.pm',
-    ABSTRACT     => 'BadgerOps IDE - Linux Sysadmin Toolkit & Perl Development Environment v2',
+    NAME         => 'Perl Den',
+    VERSION_FROM => 'lib/PerlDen/App.pm',
+    ABSTRACT     => 'Perl Den IDE - Linux Sysadmin Toolkit & Perl Development Environment v2',
     AUTHOR       => 'James Temple <james@amiga-fan.net>',
     LICENSE      => 'mit',
     MIN_PERL_VERSION => '5.028',
     EXE_FILES    => [
-        'bin/badgerops-ide',
-        'bin/badgerops-cli',
-        'bin/badgerops-tui',
+        'bin/perlden-ide',
+        'bin/perlden-cli',
+        'bin/perlden-tui',
     ],
     PREREQ_PM    => {
         'Glib'                        => '1.329',
@@ -40,10 +40,10 @@ WriteMakefile(
     META_MERGE => {
         'meta-spec' => { version => 2 },
         resources   => {
-            homepage   => 'https://github.com/James-HoneyBadger/BadgerOps',
+            homepage   => 'https://github.com/James-HoneyBadger/Perl Den',
             repository => {
                 type => 'git',
-                url  => 'https://github.com/James-HoneyBadger/BadgerOps.git',
+                url  => 'https://github.com/James-HoneyBadger/PerlDen.git',
             },
         },
     },

@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# ============================================================================
+# perlden-gui - GTK IDE launcher (same as perlden, explicit alias)
+#
+# Resolves its own location through symlinks, sources the project
+# environment, runs full pre-flight checks, and executes bin/perlden-ide.
+# ============================================================================
+set -euo pipefail
+
+SOURCE="${BASH_SOURCE[0]}"
+while [[ -L "$SOURCE" ]]; do
+	DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+	SOURCE="$(readlink "$SOURCE")"
+	[[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+ROOT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+
+source "${ROOT_DIR}/_perlden_env.sh"
+
+# Run comprehensive pre-flight checks (skip with --no-check for speed)
+if [[ "${1:-}" != "--no-check" ]]; then
+  preflight_gui
+else
+  shift
+  require_cmd perl
+  check_gui_deps
+fi
+
+exec perl "${PERLDEN_ROOT_DIR}/bin/perlden-ide" "$@"

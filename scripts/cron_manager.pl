@@ -8,7 +8,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Getopt::Long;
-use BadgerOps::Scripts::CronManager;
+use PerlDen::Scripts::CronManager;
 
 my $user;
 my $help;
@@ -24,7 +24,7 @@ if ($help) {
     exit 0;
 }
 
-my $result = BadgerOps::Scripts::CronManager::run(
+my $result = PerlDen::Scripts::CronManager::run(
     user => $user,
 );
-print BadgerOps::Scripts::CronManager::format_report($result);
+print PerlDen::Scripts::CronManager::format_report($result);

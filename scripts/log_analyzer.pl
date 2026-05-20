@@ -8,7 +8,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Getopt::Long;
-use BadgerOps::Scripts::LogAnalyzer;
+use PerlDen::Scripts::LogAnalyzer;
 
 my $lines   = 1000;
 my $pattern = '';
@@ -28,9 +28,9 @@ if ($help) {
     exit 0;
 }
 
-my $result = BadgerOps::Scripts::LogAnalyzer::run(
+my $result = PerlDen::Scripts::LogAnalyzer::run(
     max_lines => $lines,
     pattern   => $pattern,
     source    => $source,
 );
-print BadgerOps::Scripts::LogAnalyzer::format_report($result);
+print PerlDen::Scripts::LogAnalyzer::format_report($result);

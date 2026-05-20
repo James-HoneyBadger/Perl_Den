@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # ============================================================================
-# t/22_batch_runner.t — Test BadgerOps::BatchRunner
+# t/22_batch_runner.t — Test PerlDen::BatchRunner
 # ============================================================================
 use strict;
 use warnings;
@@ -8,17 +8,17 @@ use Test::More;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 
-use_ok('BadgerOps::BatchRunner');
+use_ok('PerlDen::BatchRunner');
 
 subtest 'constructor defaults' => sub {
-    my $br = BadgerOps::BatchRunner->new();
+    my $br = PerlDen::BatchRunner->new();
     ok($br, 'created BatchRunner');
     is(ref $br->{on_progress}, 'CODE', 'on_progress default is coderef');
     is(ref $br->{on_error}, 'CODE', 'on_error default is coderef');
 };
 
 subtest 'batch with system_info' => sub {
-    my $br = BadgerOps::BatchRunner->new();
+    my $br = PerlDen::BatchRunner->new();
     my $results = $br->run_batch('system_info');
     ok(ref $results eq 'ARRAY', 'returns arrayref');
     is(scalar @$results, 1, 'one result');
@@ -30,7 +30,7 @@ subtest 'batch with system_info' => sub {
 
 subtest 'batch with unknown script' => sub {
     my @errors;
-    my $br = BadgerOps::BatchRunner->new(
+    my $br = PerlDen::BatchRunner->new(
         on_error => sub { push @errors, [@_] },
     );
     my $results = $br->run_batch('nonexistent_xyz');
@@ -42,7 +42,7 @@ subtest 'batch with unknown script' => sub {
 
 subtest 'batch with multiple scripts' => sub {
     my @progress;
-    my $br = BadgerOps::BatchRunner->new(
+    my $br = PerlDen::BatchRunner->new(
         on_progress => sub { push @progress, [@_] },
     );
     my $results = $br->run_batch('system_info', 'disk_usage');
@@ -56,7 +56,7 @@ subtest 'batch with multiple scripts' => sub {
 };
 
 subtest 'format_batch_report' => sub {
-    my $br = BadgerOps::BatchRunner->new();
+    my $br = PerlDen::BatchRunner->new();
     my $results = $br->run_batch('system_info');
     my $report = $br->format_batch_report($results);
     ok(length($report) > 100, 'batch report has content');
@@ -66,7 +66,7 @@ subtest 'format_batch_report' => sub {
 };
 
 subtest 'format_batch_report with mixed results' => sub {
-    my $br = BadgerOps::BatchRunner->new();
+    my $br = PerlDen::BatchRunner->new();
     my $results = $br->run_batch('system_info', 'nonexistent_xyz');
     my $report = $br->format_batch_report($results);
     like($report, qr/1 succeeded/, 'shows 1 success');
@@ -75,7 +75,7 @@ subtest 'format_batch_report with mixed results' => sub {
 };
 
 subtest 'format_batch_report with empty results' => sub {
-    my $br = BadgerOps::BatchRunner->new();
+    my $br = PerlDen::BatchRunner->new();
     my $report = $br->format_batch_report([]);
     like($report, qr/0 script/, 'handles empty results');
 };

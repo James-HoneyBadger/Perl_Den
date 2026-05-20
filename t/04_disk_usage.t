@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # ============================================================================
-# t/04_disk_usage.t — Test BadgerOps::Scripts::DiskUsage
+# t/04_disk_usage.t — Test PerlDen::Scripts::DiskUsage
 # ============================================================================
 use strict;
 use warnings;
@@ -9,7 +9,7 @@ use FindBin;
 use lib "$FindBin::Bin/../lib";
 use File::Temp qw(tempdir);
 
-use_ok('BadgerOps::Scripts::DiskUsage');
+use_ok('PerlDen::Scripts::DiskUsage');
 
 subtest 'scan a temp directory' => sub {
     my $dir = tempdir(CLEANUP => 1);
@@ -26,7 +26,7 @@ subtest 'scan a temp directory' => sub {
     print $fh 'y' x 4096;
     close $fh;
 
-    my $result = BadgerOps::Scripts::DiskUsage::run(
+    my $result = PerlDen::Scripts::DiskUsage::run(
         target    => $dir,
         max_depth => 2,
         min_size  => 0,
@@ -46,14 +46,14 @@ subtest 'format_report produces output' => sub {
     print $fh 'data';
     close $fh;
 
-    my $r = BadgerOps::Scripts::DiskUsage::run(
+    my $r = PerlDen::Scripts::DiskUsage::run(
         target => $dir, min_size => 0);
-    my $report = BadgerOps::Scripts::DiskUsage::format_report($r);
+    my $report = PerlDen::Scripts::DiskUsage::format_report($r);
     ok(length($report) > 50, 'report has content');
 };
 
 subtest 'nonexistent directory returns zero' => sub {
-    my $r = BadgerOps::Scripts::DiskUsage::run(target => '/nonexistent_xyz');
+    my $r = PerlDen::Scripts::DiskUsage::run(target => '/nonexistent_xyz');
     is($r->{total_size}, 0, 'total_size is 0 for nonexistent dir');
 };
 

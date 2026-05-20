@@ -7,7 +7,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Getopt::Long;
-use BadgerOps::Scripts::SystemInfo;
+use PerlDen::Scripts::SystemInfo;
 
 my $help;
 GetOptions('help|h' => \$help) or die "Usage: $0 [--help]\n";
@@ -17,5 +17,5 @@ if ($help) {
     exit 0;
 }
 
-my $result = BadgerOps::Scripts::SystemInfo::run();
-print BadgerOps::Scripts::SystemInfo::format_report($result);
+my $result = PerlDen::Scripts::SystemInfo::run();
+print PerlDen::Scripts::SystemInfo::format_report($result);

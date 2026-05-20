@@ -1,6 +1,6 @@
-# BadgerOps Plugin System
+# Perl Den Plugin System
 
-BadgerOps v2.0 supports user-installable plugins that appear alongside the
+Perl Den v2.0 supports user-installable plugins that appear alongside the
 20 built-in scripts in every interface (GUI, CLI, TUI).
 
 ---
@@ -23,13 +23,13 @@ BadgerOps v2.0 supports user-installable plugins that appear alongside the
 Drop a `.pm` file into:
 
 ```
-~/.config/badgerops/plugins/
+~/.config/perlden/plugins/
 ```
 
-> **Custom base directory**: If the `BADGEROPS_HOME` environment variable is
-> set, plugins live in `$BADGEROPS_HOME/plugins/` instead.
+> **Custom base directory**: If the `PERLDEN_HOME` environment variable is
+> set, plugins live in `$PERLDEN_HOME/plugins/` instead.
 
-BadgerOps discovers plugins automatically on startup — no registration step
+Perl Den discovers plugins automatically on startup — no registration step
 is needed.  Restart the application (or press **Reload** in the GUI) for
 new plugins to appear.
 
@@ -50,7 +50,7 @@ A plugin is a plain Perl module (`.pm`) that exports three functions:
 
 Receives any keyword arguments the caller passes (the GUI/CLI may pass
 `run_timeout`).  Must return a **hashref**.  The hashref is opaque to
-BadgerOps — you define its structure and consume it in `format_report`.
+Perl Den — you define its structure and consume it in `format_report`.
 
 ### `format_report($result)`
 
@@ -75,7 +75,7 @@ sub metadata {
 }
 ```
 
-If `metadata()` is absent, BadgerOps falls back to reading comment headers
+If `metadata()` is absent, Perl Den falls back to reading comment headers
 from the top 30 lines of the file:
 
 ```perl
@@ -89,7 +89,7 @@ from the top 30 lines of the file:
 ## Minimal Example
 
 ```perl
-package BadgerOps::Plugin::HelloWorld;
+package PerlDen::Plugin::HelloWorld;
 use strict;
 use warnings;
 
@@ -99,7 +99,7 @@ use warnings;
 
 sub run {
     my (%args) = @_;
-    return { message => 'Hello from BadgerOps!' };
+    return { message => 'Hello from Perl Den!' };
 }
 
 sub format_report {
@@ -110,14 +110,14 @@ sub format_report {
 1;
 ```
 
-Save as `~/.config/badgerops/plugins/HelloWorld.pm`.
+Save as `~/.config/perlden/plugins/HelloWorld.pm`.
 
 ---
 
 ## Full Example with metadata()
 
 ```perl
-package BadgerOps::Plugin::DiskQuota;
+package PerlDen::Plugin::DiskQuota;
 use strict;
 use warnings;
 
@@ -175,19 +175,19 @@ sub format_report {
 
 ```bash
 # Disable a plugin (keeps the file, just hides it)
-badgerops-cli plugin disable DiskQuota
+perlden-cli plugin disable DiskQuota
 
 # Re-enable it
-badgerops-cli plugin enable DiskQuota
+perlden-cli plugin enable DiskQuota
 
 # List all plugins and their status
-badgerops-cli plugin list
+perlden-cli plugin list
 ```
 
 ### Via config file
 
 Add the plugin base name (without `.pm`) to `disabled_plugins` in
-`~/.config/badgerops/config.yml`:
+`~/.config/perlden/config.yml`:
 
 ```yaml
 disabled_plugins:
@@ -201,38 +201,38 @@ disabled_plugins:
 
 ```bash
 # List installed plugins
-badgerops-cli plugin list
+perlden-cli plugin list
 
 # Show metadata for a specific plugin
-badgerops-cli plugin info DiskQuota
+perlden-cli plugin info DiskQuota
 
 # Run a plugin as you would any script
-badgerops-cli run DiskQuota
+perlden-cli run DiskQuota
 
 # Include a plugin in a batch run
-badgerops-cli batch system_info,DiskQuota,disk_usage
+perlden-cli batch system_info,DiskQuota,disk_usage
 
 # Export the batch as HTML
-badgerops-cli batch --export=html system_info,DiskQuota > report.html
+perlden-cli batch --export=html system_info,DiskQuota > report.html
 ```
 
 ---
 
 ## Configuration
 
-Plugins can read the shared BadgerOps config by importing `BadgerOps::Config`:
+Plugins can read the shared Perl Den config by importing `PerlDen::Config`:
 
 ```perl
-use BadgerOps::Config;
-BadgerOps::Config::load();
-my $timeout = BadgerOps::Config::get('script_timeout') // 30;
+use PerlDen::Config;
+PerlDen::Config::load();
+my $timeout = PerlDen::Config::get('script_timeout') // 30;
 ```
 
 You can also store plugin-specific settings in the config under your own
 namespace key (prefix with your plugin name to avoid conflicts):
 
 ```yaml
-# ~/.config/badgerops/config.yml
+# ~/.config/perlden/config.yml
 DiskQuota_warn_threshold: 80
 ```
 
@@ -245,7 +245,7 @@ hashref during plugin initialisation, before the first `run()` call.
 
 - Plugin files are loaded with `require` — they execute arbitrary Perl code.
   **Only install plugins from sources you trust.**
-- BadgerOps validates plugin filenames against `/\A[A-Za-z0-9_]+\.pm\z/` and
+- Perl Den validates plugin filenames against `/\A[A-Za-z0-9_]+\.pm\z/` and
   rejects files whose names contain path separators or shell metacharacters.
 - Plugins lacking a `run()` function are silently skipped.
 - Disabled plugins are never loaded into memory; their files are ignored

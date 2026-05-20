@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # ============================================================================
-# t/12_config_diff.t — Test BadgerOps::Scripts::ConfigDiff
+# t/12_config_diff.t — Test PerlDen::Scripts::ConfigDiff
 # ============================================================================
 use strict;
 use warnings;
@@ -9,7 +9,7 @@ use FindBin;
 use lib "$FindBin::Bin/../lib";
 use File::Temp qw(tempdir);
 
-use_ok('BadgerOps::Scripts::ConfigDiff');
+use_ok('PerlDen::Scripts::ConfigDiff');
 
 my $base_dir = tempdir(CLEANUP => 1) . "/baselines";
 my $src_dir  = tempdir(CLEANUP => 1);
@@ -25,7 +25,7 @@ for my $name (qw(hosts.conf app.conf)) {
 }
 
 subtest 'create baseline' => sub {
-    my $result = BadgerOps::Scripts::ConfigDiff::run(
+    my $result = PerlDen::Scripts::ConfigDiff::run(
         action   => 'baseline',
         base_dir => $base_dir,
         files    => \@test_files,
@@ -38,7 +38,7 @@ subtest 'create baseline' => sub {
 };
 
 subtest 'status shows unchanged' => sub {
-    my $r = BadgerOps::Scripts::ConfigDiff::run(
+    my $r = PerlDen::Scripts::ConfigDiff::run(
         action   => 'status',
         base_dir => $base_dir,
         files    => \@test_files,
@@ -54,7 +54,7 @@ subtest 'diff detects changes' => sub {
     print $fh "new_key=new_value\n";
     close $fh;
 
-    my $r = BadgerOps::Scripts::ConfigDiff::run(
+    my $r = PerlDen::Scripts::ConfigDiff::run(
         action   => 'diff',
         base_dir => $base_dir,
         files    => \@test_files,
@@ -66,12 +66,12 @@ subtest 'diff detects changes' => sub {
 };
 
 subtest 'format_report works' => sub {
-    my $r = BadgerOps::Scripts::ConfigDiff::run(
+    my $r = PerlDen::Scripts::ConfigDiff::run(
         action   => 'status',
         base_dir => $base_dir,
         files    => \@test_files,
     );
-    my $report = BadgerOps::Scripts::ConfigDiff::format_report($r);
+    my $report = PerlDen::Scripts::ConfigDiff::format_report($r);
     ok(length($report) > 50, 'report has content');
     like($report, qr/CONFIGURATION/i, 'has header');
 };

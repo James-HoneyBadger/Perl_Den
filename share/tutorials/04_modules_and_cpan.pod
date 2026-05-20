@@ -132,7 +132,7 @@ B<Using it:>
     use FindBin;
     use lib "$FindBin::Bin/../lib";
 
-This is how the BadgerOps IDE's scripts find their modules regardless of
+This is how the Perl Den IDE's scripts find their modules regardless of
 where they're installed.
 
 =head2 Module Best Practices

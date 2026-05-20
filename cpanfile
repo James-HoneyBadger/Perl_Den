@@ -1,4 +1,4 @@
-# BadgerOps IDE - Dependencies
+# PerlDen IDE - Dependencies
 # Install with: cpanm --installdeps .
 
 # Minimum Perl version

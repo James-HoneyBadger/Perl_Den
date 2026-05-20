@@ -1,8 +1,8 @@
-# BadgerOps IDE
+# Perl Den IDE
 
 **Linux Sysadmin Toolkit & Perl Development Environment**
 
-BadgerOps is an integrated development environment for writing, running, and
+Perl Den is an integrated development environment for writing, running, and
 managing Perl scripts on Linux — with a focus on system administration.  It
 bundles 20 ready-to-run sysadmin scripts, a GTK3 code editor, an embedded
 terminal, a live system dashboard, 12 Perl tutorials, and a library of
@@ -10,9 +10,9 @@ script templates.
 
 Three interfaces are provided:
 
-- **GUI** (`badgerops-gui`) — GTK3 IDE with tabbed editor, integrated terminal, script browser, and dashboard
-- **CLI** (`badgerops-cli`) — run any toolkit script from the command line
-- **TUI** (`badgerops-tui`) — interactive terminal menu for browsing and running scripts
+- **GUI** (`perlden-gui`) — GTK3 IDE with tabbed editor, integrated terminal, script browser, and dashboard
+- **CLI** (`perlden-cli`) — run any toolkit script from the command line
+- **TUI** (`perlden-tui`) — interactive terminal menu for browsing and running scripts
 
 ---
 
@@ -35,7 +35,7 @@ Three interfaces are provided:
 | Containers        | DockerMonitor                                               |
 | Backup & Config   | BackupManager, ConfigDiff, DuplicateFinder                  |
 
-Every script has a Perl module (`lib/BadgerOps/Scripts/`) with a uniform
+Every script has a Perl module (`lib/PerlDen/Scripts/`) with a uniform
 `run(%args)` → `\%result` and `format_report(\%result)` → `$string` API,
 plus a standalone runner (`scripts/*.pl`).
 
@@ -44,7 +44,7 @@ Real-time system overview: hostname, kernel, uptime, load average, CPU,
 memory, swap, disk usage, and top processes — auto-refreshing every 5 s.
 
 ### Templates & Tutorials
-- 8 script templates (CLI, file processor, log parser, OOP module, BadgerOps module, sysadmin, test suite, web client)
+- 8 script templates (CLI, file processor, log parser, OOP module, Perl Den module, sysadmin, test suite, web client)
 - 12 progressive Perl tutorials covering fundamentals through security hardening
 
 ### Themes
@@ -56,8 +56,8 @@ memory, swap, disk usage, and top processes — auto-refreshing every 5 s.
 
 ```bash
 # Clone the repository
-git clone https://github.com/James-HoneyBadger/BadgerOps.git
-cd BadgerOps
+git clone https://github.com/James-HoneyBadger/PerlDen.git
+cd PerlDen
 
 # Install system dependencies (Arch Linux)
 sudo pacman -S perl gtk3 vte3 gtksourceview4 gobject-introspection \
@@ -71,10 +71,10 @@ fc-cache -f
 cpanm --installdeps .
 
 # Launch
-./badgerops-gui                          # GTK3 IDE
-./badgerops-cli list                     # List all toolkit scripts
-./badgerops-cli system_info              # Run a script
-./badgerops-tui                          # Interactive terminal UI
+./perlden-gui                          # GTK3 IDE
+./perlden-cli list                     # List all toolkit scripts
+./perlden-cli system_info              # Run a script
+./perlden-tui                          # Interactive terminal UI
 ```
 
 For Debian/Ubuntu and other distros, see [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
@@ -86,20 +86,20 @@ For Debian/Ubuntu and other distros, see [docs/ENVIRONMENT.md](docs/ENVIRONMENT.
 ### Option A: Run from source (recommended)
 
 ```bash
-./badgerops-gui            # GUI IDE
-./badgerops-cli list       # CLI
-./badgerops-tui            # TUI
+./perlden-gui            # GUI IDE
+./perlden-cli list       # CLI
+./perlden-tui            # TUI
 ```
 
 ### Option B: Install as shell commands
 
 ```bash
-# Symlinks badgerops, badgerops-cli, badgerops-tui, badgerops-gui into ~/.local/bin
-./install_badgerops_command.sh --user
+# Symlinks perlden, perlden-cli, perlden-tui, perlden-gui into ~/.local/bin
+./install_perlden_command.sh --user
 
 # Now available globally:
-badgerops-cli system_info
-badgerops-gui
+perlden-cli system_info
+perlden-gui
 ```
 
 ---
@@ -107,15 +107,15 @@ badgerops-gui
 ## Project Structure
 
 ```
-BadgerOps/
+Perl Den/
 ├── bin/                         # Perl entry points
-│   ├── badgerops-cli              #   CLI dispatcher
-│   ├── badgerops-tui              #   Terminal UI
-│   └── badgerops-ide              #   GTK3 IDE launcher
-├── lib/BadgerOps/                  # Core modules
+│   ├── perlden-cli              #   CLI dispatcher
+│   ├── perlden-tui              #   Terminal UI
+│   └── perlden-ide              #   GTK3 IDE launcher
+├── lib/PerlDen/                  # Core modules
 │   ├── App.pm                   #   GUI application controller
 │   ├── BatchRunner.pm           #   Batch script execution + HTML/JSON export
-│   ├── Config.pm                #   YAML config, schema v4, BADGEROPS_HOME support
+│   ├── Config.pm                #   YAML config, schema v4, PERLDEN_HOME support
 │   ├── Git.pm                   #   Git repository status with caching
 │   ├── Runner.pm                #   Non-blocking / sync script execution
 │   ├── ScriptRegistry.pm        #   Auto-discovery: built-ins + plugins + user scripts
@@ -139,10 +139,10 @@ BadgerOps/
 │   ├── PLUGINS.md               # Plugin authoring guide
 │   └── KEYBINDINGS.md           # GUI keyboard shortcut reference
 ├── CHANGELOG.md                 # Full change history
-├── badgerops-gui / badgerops-cli / badgerops-tui    # Shell wrappers
-├── badgerops                      # Shell wrapper → badgerops-cli
-├── _badgerops_env.sh                   # Environment bootstrap (PATH, PERL5LIB)
-├── install_badgerops_command.sh   # Install/uninstall shell commands
+├── perlden-gui / perlden-cli / perlden-tui    # Shell wrappers
+├── perlden                      # Shell wrapper → perlden-cli
+├── _perlden_env.sh                   # Environment bootstrap (PATH, PERL5LIB)
+├── install_perlden_command.sh   # Install/uninstall shell commands
 ├── .github/workflows/test.yml   # CI: Perl 5.28/5.36/5.38 matrix
 ├── cpanfile                     # CPAN dependency declaration
 ├── Makefile.PL                  # ExtUtils::MakeMaker build
@@ -187,4 +187,4 @@ MIT License — see [LICENSE](LICENSE).
 
 James Temple — james@honey-badger.org
 
-© 2026 Honey Badger Universe — [https://github.com/James-HoneyBadger/BadgerOps](https://github.com/James-HoneyBadger/BadgerOps)
+© 2026 Honey Badger Universe — [https://github.com/James-HoneyBadger/Perl Den](https://github.com/James-HoneyBadger/Perl Den)

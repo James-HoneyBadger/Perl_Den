@@ -8,7 +8,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Getopt::Long;
-use BadgerOps::Scripts::SSLChecker;
+use PerlDen::Scripts::SSLChecker;
 
 my $port    = 443;
 my $timeout = 10;
@@ -29,9 +29,9 @@ if ($help) {
 my @hosts = @ARGV;
 @hosts = ('localhost') unless @hosts;
 
-my $result = BadgerOps::Scripts::SSLChecker::run(
+my $result = PerlDen::Scripts::SSLChecker::run(
     hosts   => \@hosts,
     port    => $port,
     timeout => $timeout,
 );
-print BadgerOps::Scripts::SSLChecker::format_report($result);
+print PerlDen::Scripts::SSLChecker::format_report($result);

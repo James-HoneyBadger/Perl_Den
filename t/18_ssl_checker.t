@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # ============================================================================
-# t/18_ssl_checker.t — Test BadgerOps::Scripts::SSLChecker
+# t/18_ssl_checker.t — Test PerlDen::Scripts::SSLChecker
 # ============================================================================
 use strict;
 use warnings;
@@ -8,11 +8,11 @@ use Test::More;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 
-use_ok('BadgerOps::Scripts::SSLChecker');
+use_ok('PerlDen::Scripts::SSLChecker');
 
 subtest 'run returns expected structure' => sub {
     # Use a very short timeout and localhost to avoid network dependency
-    my $result = BadgerOps::Scripts::SSLChecker::run(
+    my $result = PerlDen::Scripts::SSLChecker::run(
         hosts   => ['localhost'],
         port    => 443,
         timeout => 2,
@@ -34,7 +34,7 @@ subtest 'run returns expected structure' => sub {
 };
 
 subtest 'local_certs key exists' => sub {
-    my $result = BadgerOps::Scripts::SSLChecker::run(
+    my $result = PerlDen::Scripts::SSLChecker::run(
         hosts   => [],
         timeout => 1,
     );
@@ -42,12 +42,12 @@ subtest 'local_certs key exists' => sub {
 };
 
 subtest 'format_report produces text' => sub {
-    my $result = BadgerOps::Scripts::SSLChecker::run(
+    my $result = PerlDen::Scripts::SSLChecker::run(
         hosts   => ['localhost'],
         port    => 443,
         timeout => 2,
     );
-    my $report = BadgerOps::Scripts::SSLChecker::format_report($result);
+    my $report = PerlDen::Scripts::SSLChecker::format_report($result);
     ok(length($report) > 50, 'report has content');
     like($report, qr/SSL.*TLS.*CERTIFICATE/i, 'report has header');
 };
@@ -61,7 +61,7 @@ subtest 'format_report handles connection errors' => sub {
         }],
         local_certs => [],
     };
-    my $report = BadgerOps::Scripts::SSLChecker::format_report($result);
+    my $report = PerlDen::Scripts::SSLChecker::format_report($result);
     like($report, qr/ERROR.*Connection refused/, 'error displayed in report');
 };
 

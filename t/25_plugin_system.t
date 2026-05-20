@@ -23,7 +23,7 @@ sub write_plugin {
     my $has_meta = $opts{has_meta}   // 1;
     my $extra   = $opts{extra}       // '';
 
-    my $pkg = "BadgerOps::Plugin::$basename";
+    my $pkg = "PerlDen::Plugin::$basename";
 
     my $run_sub  = $has_run  ? "sub run { return { status => 'ok', data => [] } }\n" : '';
     my $fmt_sub  = $has_fmt  ? "sub format_report { return 'Report for $_[1]' }\n"  : '';
@@ -62,20 +62,20 @@ my $plugins_dir = File::Spec->catdir($tmpdir, 'plugins');
 mkdir $plugins_dir or die "mkdir $plugins_dir: $!";
 
 # Point ScriptRegistry to our temp plugin dir
-local $ENV{BADGEROPS_HOME} = $tmpdir;
+local $ENV{PERLDEN_HOME} = $tmpdir;
 
-require BadgerOps::ScriptRegistry;
-BadgerOps::ScriptRegistry->import(qw(script_index plugins_dir find_script find_closest invalidate_cache));
+require PerlDen::ScriptRegistry;
+PerlDen::ScriptRegistry->import(qw(script_index plugins_dir find_script find_closest invalidate_cache));
 
 # ── 1. plugins_dir() returns the correct path ─────────────────────────────────
 {
-    my $dir = BadgerOps::ScriptRegistry::plugins_dir();
-    like $dir, qr/\Q$tmpdir\E/, 'plugins_dir() honours BADGEROPS_HOME';
+    my $dir = PerlDen::ScriptRegistry::plugins_dir();
+    like $dir, qr/\Q$tmpdir\E/, 'plugins_dir() honours PERLDEN_HOME';
 }
 
 # ── 2. No plugins — script_index still works ─────────────────────────────────
 {
-    BadgerOps::ScriptRegistry::invalidate_cache();
+    PerlDen::ScriptRegistry::invalidate_cache();
     my @all = script_index();
     ok scalar @all >= 20, 'script_index() returns at least 20 built-in scripts with empty plugins dir';
 }
@@ -83,7 +83,7 @@ BadgerOps::ScriptRegistry->import(qw(script_index plugins_dir find_script find_c
 # ── 3. Valid plugin is discovered and appears in index ────────────────────────
 {
     write_plugin($plugins_dir, 'GoodPlugin');
-    BadgerOps::ScriptRegistry::invalidate_cache();
+    PerlDen::ScriptRegistry::invalidate_cache();
 
     my @all   = script_index();
     my @plug  = grep { $_->[2] =~ /GoodPlugin/ } @all;
@@ -99,7 +99,7 @@ BadgerOps::ScriptRegistry->import(qw(script_index plugins_dir find_script find_c
     my $path = File::Spec->catfile($plugins_dir, 'HeaderPlugin.pm');
     open my $fh, '>', $path or die $!;
     print $fh <<'PM';
-package BadgerOps::Plugin::HeaderPlugin;
+package PerlDen::Plugin::HeaderPlugin;
 # Name: Header Plugin
 # Description: Loaded via comment headers
 # Category: Security
@@ -111,7 +111,7 @@ sub format_report { return '' }
 PM
     close $fh;
 
-    BadgerOps::ScriptRegistry::invalidate_cache();
+    PerlDen::ScriptRegistry::invalidate_cache();
     my @all  = script_index();
     my @hp   = grep { $_->[0] eq 'Header Plugin' } @all;
     ok scalar @hp >= 1, 'plugin with comment-header metadata is discovered';
@@ -121,7 +121,7 @@ PM
 # ── 5. Plugin without run() is rejected ───────────────────────────────────────
 {
     write_plugin($plugins_dir, 'NoRunPlugin', has_run => 0);
-    BadgerOps::ScriptRegistry::invalidate_cache();
+    PerlDen::ScriptRegistry::invalidate_cache();
 
     my @all  = script_index();
     my @bad  = grep { $_->[2] =~ /NoRunPlugin/ } @all;
@@ -138,7 +138,7 @@ PM
         print $fh "1;\n";
         close $fh;
 
-        BadgerOps::ScriptRegistry::invalidate_cache();
+        PerlDen::ScriptRegistry::invalidate_cache();
         my @all = script_index();
         my @bp  = grep { defined $_->[1] && $_->[1] =~ /bad plugin/ } @all;
         is scalar @bp, 0, 'plugin with invalid filename is rejected';
@@ -148,25 +148,25 @@ PM
 
 # ── 7. Disabled plugin does not appear ────────────────────────────────────────
 SKIP: {
-    skip 'BadgerOps::Config not available', 2
-        unless eval { require BadgerOps::Config; 1 };
+    skip 'PerlDen::Config not available', 2
+        unless eval { require PerlDen::Config; 1 };
 
     # Write a minimal config YAML that disables GoodPlugin
-    my $cfg_dir  = File::Spec->catdir($tmpdir, 'badgerops');
+    my $cfg_dir  = File::Spec->catdir($tmpdir, 'perlden');
     mkdir $cfg_dir unless -d $cfg_dir;
     my $cfg_file = File::Spec->catfile($cfg_dir, 'config.yml');
     open my $fh, '>', $cfg_file or die $!;
     print $fh "schema_version: 4\ndisabled_plugins:\n  - GoodPlugin\n";
     close $fh;
 
-    BadgerOps::ScriptRegistry::invalidate_cache();
+    PerlDen::ScriptRegistry::invalidate_cache();
     my @all  = script_index();
     my @plug = grep { $_->[2] =~ /GoodPlugin/ } @all;
     is scalar @plug, 0, 'disabled plugin is excluded from index';
 
     # Re-enable by removing config
     unlink $cfg_file;
-    BadgerOps::ScriptRegistry::invalidate_cache();
+    PerlDen::ScriptRegistry::invalidate_cache();
     @all  = script_index();
     @plug = grep { $_->[2] =~ /GoodPlugin/ } @all;
     is scalar @plug, 1, 'plugin reappears after removing disable config';

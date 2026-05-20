@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+source "$(cd "$(dirname "$0")" && pwd)/_perlden_env.sh"
+
+require_cmd perl
+check_gui_deps
+
+exec perl "${PERLDEN_ROOT_DIR}/bin/perlden-ide" "$@"

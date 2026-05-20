@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# ============================================================================
+# perlden-tui - TUI launcher for the PerlDen toolkit
+#
+# Resolves its own location through symlinks, sources the project
+# environment, and executes bin/perlden-tui.
+# ============================================================================
+set -euo pipefail
+
+SOURCE="${BASH_SOURCE[0]}"
+while [[ -L "$SOURCE" ]]; do
+	DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+	SOURCE="$(readlink "$SOURCE")"
+	[[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+ROOT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+
+source "${ROOT_DIR}/_perlden_env.sh"
+
+require_cmd perl
+export PERLDEN_LAUNCH_NAME="$(basename "$0")"
+
+exec perl "${PERLDEN_ROOT_DIR}/bin/perlden-tui" "$@"

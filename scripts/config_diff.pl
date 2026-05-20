@@ -10,7 +10,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Getopt::Long;
-use BadgerOps::Scripts::ConfigDiff;
+use PerlDen::Scripts::ConfigDiff;
 
 my $action   = 'status';
 my $base_dir;
@@ -31,5 +31,5 @@ if ($help) {
 my %args = (action => $action);
 $args{base_dir} = $base_dir if $base_dir;
 
-my $result = BadgerOps::Scripts::ConfigDiff::run(%args);
-print BadgerOps::Scripts::ConfigDiff::format_report($result);
+my $result = PerlDen::Scripts::ConfigDiff::run(%args);
+print PerlDen::Scripts::ConfigDiff::format_report($result);

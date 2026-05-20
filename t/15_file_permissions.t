@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # ============================================================================
-# t/15_file_permissions.t — Test BadgerOps::Scripts::FilePermissions
+# t/15_file_permissions.t — Test PerlDen::Scripts::FilePermissions
 # ============================================================================
 use strict;
 use warnings;
@@ -10,12 +10,12 @@ use lib "$FindBin::Bin/../lib";
 use File::Temp qw(tempdir);
 use File::Path qw(make_path);
 
-use_ok('BadgerOps::Scripts::FilePermissions');
+use_ok('PerlDen::Scripts::FilePermissions');
 
 subtest 'run returns expected structure' => sub {
     # Scan a small temp dir to keep things fast
     my $tmpdir = tempdir(CLEANUP => 1);
-    my $result = BadgerOps::Scripts::FilePermissions::run(
+    my $result = PerlDen::Scripts::FilePermissions::run(
         target    => $tmpdir,
         max_files => 100,
     );
@@ -36,7 +36,7 @@ subtest 'detects world-writable files' => sub {
     close $fh;
     chmod 0666, $ww_file;  # world-writable
 
-    my $result = BadgerOps::Scripts::FilePermissions::run(
+    my $result = PerlDen::Scripts::FilePermissions::run(
         target    => $tmpdir,
         max_files => 100,
     );
@@ -49,7 +49,7 @@ subtest 'detects world-writable files' => sub {
 
 subtest 'empty dir produces empty results' => sub {
     my $tmpdir = tempdir(CLEANUP => 1);
-    my $result = BadgerOps::Scripts::FilePermissions::run(
+    my $result = PerlDen::Scripts::FilePermissions::run(
         target    => $tmpdir,
         max_files => 100,
     );
@@ -62,8 +62,8 @@ subtest 'empty dir produces empty results' => sub {
 
 subtest 'format_report produces text' => sub {
     my $tmpdir = tempdir(CLEANUP => 1);
-    my $result = BadgerOps::Scripts::FilePermissions::run(target => $tmpdir);
-    my $report = BadgerOps::Scripts::FilePermissions::format_report($result);
+    my $result = PerlDen::Scripts::FilePermissions::run(target => $tmpdir);
+    my $report = PerlDen::Scripts::FilePermissions::format_report($result);
     ok(length($report) > 50, 'report has content');
     like($report, qr/FILE PERMISSIONS AUDIT/i, 'report has header');
     like($report, qr/\Q$tmpdir\E/, 'report contains target path');

@@ -8,7 +8,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Getopt::Long;
-use BadgerOps::Scripts::ProcessManager;
+use PerlDen::Scripts::ProcessManager;
 
 my $sort_by = 'cpu';
 my $top     = 25;
@@ -26,8 +26,8 @@ if ($help) {
     exit 0;
 }
 
-my $result = BadgerOps::Scripts::ProcessManager::run(
+my $result = PerlDen::Scripts::ProcessManager::run(
     sort_by => $sort_by,
     top_n   => $top,
 );
-print BadgerOps::Scripts::ProcessManager::format_report($result);
+print PerlDen::Scripts::ProcessManager::format_report($result);
