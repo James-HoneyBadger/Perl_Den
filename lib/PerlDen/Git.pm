@@ -5,6 +5,8 @@ package PerlDen::Git;
 use strict;
 use warnings;
 use File::Basename qw(dirname);
+use File::Spec;
+use IPC::Open3;
 use Carp qw(carp);
 
 our $VERSION = '2.01';
@@ -116,10 +118,13 @@ sub _run_git {
 
     my @cmd = ('git', '-C', $dir, @args);
     my $output = eval {
-        open my $fh, '-|', @cmd or return undef;
+        my $out;
+        open my $devnull, '>', File::Spec->devnull() or return undef;
+        my $pid = open3(undef, my $fh, $devnull, @cmd);
         local $/;
-        my $out = <$fh>;
+        $out = <$fh>;
         close $fh;
+        waitpid($pid, 0);
         if ($? != 0) {
             warn "Git: command '@args' failed (exit " . ($? >> 8) . ") in $dir\n"
                 if $ENV{PERLDEN_DEBUG};

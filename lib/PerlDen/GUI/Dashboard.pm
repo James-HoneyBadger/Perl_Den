@@ -415,6 +415,9 @@ sub _read_cpu_temp {
 
 # Returns (temp_C, util_pct) from nvidia-smi, or () if unavailable
 sub _read_nvidia_gpu {
+    my $have_nvidia_smi = `command -v nvidia-smi 2>/dev/null`;
+    return () unless defined $have_nvidia_smi && length $have_nvidia_smi;
+
     my $out = eval {
         open my $fh, '-|', 'nvidia-smi',
             '--query-gpu=temperature.gpu,utilization.gpu',
@@ -434,6 +437,9 @@ sub _read_nvidia_gpu {
 
 # Returns (temp_C, undef) from rocm-smi (AMD GPUs), or () if unavailable
 sub _read_amd_gpu {
+    my $have_rocm_smi = `command -v rocm-smi 2>/dev/null`;
+    return () unless defined $have_rocm_smi && length $have_rocm_smi;
+
     my $out = eval {
         open my $fh, '-|', 'rocm-smi', '--showtemp' or return undef;
         local $/;

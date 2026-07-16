@@ -8,7 +8,8 @@ use utf8;
 use Glib ('TRUE', 'FALSE');
 use Gtk3;
 use PerlDen::Config;
-use PerlDen::ScriptRegistry qw(plugins_dir invalidate_cache);
+use PerlDen::ScriptRegistry qw(plugins_dir invalidate_cache script_index);
+use PerlDen::Util qw(shell_quote);
 use File::Basename qw(basename);
 
 sub show_about {
@@ -59,6 +60,8 @@ sub show_shortcuts {
         ['  Quit',            'Ctrl+Q'],
         ['', ''],
         ['Edit', ''],
+        ['  Quick Launcher',  'Ctrl+Shift+P'],
+        ['', ''],
         ['  Undo',            'Ctrl+Z'],
         ['  Redo',            'Ctrl+Shift+Z'],
         ['  Find',            'Ctrl+F'],
@@ -101,6 +104,251 @@ sub show_shortcuts {
     $dialog->show_all;
     $dialog->run;
     $dialog->destroy;
+}
+
+sub show_quick_launcher {
+    my ($mw) = @_;
+    my @actions = _quick_launcher_actions($mw);
+
+    if (!@actions) {
+        my $info = Gtk3::MessageDialog->new(
+            $mw->window, 'modal', 'info', 'ok',
+            'No quick-launch actions are available.'
+        );
+        $info->run;
+        $info->destroy;
+        return;
+    }
+
+    my $dialog = Gtk3::Dialog->new_with_buttons(
+        'Quick Launcher',
+        $mw->window,
+        'modal',
+        'gtk-cancel' => 'cancel',
+        'gtk-ok'     => 'ok',
+    );
+    $dialog->set_default_size(760, 500);
+    $dialog->set_default_response('ok');
+
+    my $content = $dialog->get_content_area;
+    $content->set_margin_start(10);
+    $content->set_margin_end(10);
+    $content->set_margin_top(10);
+    $content->set_margin_bottom(10);
+
+    my $vbox = Gtk3::Box->new('vertical', 8);
+    $content->pack_start($vbox, TRUE, TRUE, 0);
+
+    my $entry = Gtk3::Entry->new;
+    $entry->set_placeholder_text('Type to filter scripts, files, templates, tutorials, and actions');
+    $vbox->pack_start($entry, FALSE, FALSE, 0);
+
+    my $count_label = Gtk3::Label->new('');
+    $count_label->set_halign('start');
+    $count_label->get_style_context->add_class('dim-label');
+    $vbox->pack_start($count_label, FALSE, FALSE, 0);
+
+    my $store = Gtk3::ListStore->new(
+        'Glib::String',
+        'Glib::String',
+        'Glib::String',
+        'Glib::Int',
+    );
+    my $tree = Gtk3::TreeView->new($store);
+    $tree->set_headers_visible(FALSE);
+    $tree->set_enable_search(FALSE);
+    $tree->set_rules_hint(TRUE);
+
+    my $label_r = Gtk3::CellRendererText->new;
+    my $label_c = Gtk3::TreeViewColumn->new_with_attributes('Action', $label_r, text => 0);
+    $label_c->set_expand(TRUE);
+    $tree->append_column($label_c);
+
+    my $cat_r = Gtk3::CellRendererText->new;
+    my $cat_c = Gtk3::TreeViewColumn->new_with_attributes('Category', $cat_r, text => 2);
+    $cat_r->set_property(ellipsize => 'end');
+    $tree->append_column($cat_c);
+
+    my $sw = Gtk3::ScrolledWindow->new(undef, undef);
+    $sw->set_policy('automatic', 'automatic');
+    $sw->add($tree);
+    $vbox->pack_start($sw, TRUE, TRUE, 0);
+
+    my $refresh = sub {
+        my $query = lc($entry->get_text // '');
+        $store->clear;
+
+        my @visible = grep {
+            my $haystack = lc(join ' ', $_->{label} // '', $_->{description} // '', $_->{category} // '');
+            !length($query) || index($haystack, $query) >= 0
+        } sort {
+            ($a->{rank} // 0) <=> ($b->{rank} // 0)
+                || ($a->{category} // '') cmp ($b->{category} // '')
+                || ($a->{label} // '') cmp ($b->{label} // '')
+        } @actions;
+
+        for my $idx (0 .. $#visible) {
+            my $action = $visible[$idx];
+            my $iter = $store->append;
+            $store->set(
+                $iter,
+                0, $action->{label} // '',
+                1, $action->{description} // '',
+                2, $action->{category} // '',
+                3, $action->{_index},
+            );
+        }
+
+        $count_label->set_text(sprintf('%d action%s', scalar @visible, @visible == 1 ? '' : 's'));
+        if ($store->iter_n_children(undef) > 0) {
+            $tree->get_selection->select_path(Gtk3::TreePath->new_from_string('0'));
+        }
+    };
+
+    my $run_selected = sub {
+        my ($model, $iter) = $tree->get_selection->get_selected;
+        return unless $iter;
+        my $index = $model->get($iter, 3);
+        return unless defined $index && defined $actions[$index];
+        $dialog->destroy;
+        $actions[$index]{run}->();
+    };
+
+    $entry->signal_connect(changed => $refresh);
+    $entry->signal_connect(activate => sub { $dialog->response('ok') });
+    $tree->signal_connect(row_activated => sub { $dialog->response('ok') });
+
+    $dialog->show_all;
+    $refresh->();
+
+    if ($dialog->run eq 'ok') {
+        $run_selected->();
+    } else {
+        $dialog->destroy;
+    }
+}
+
+sub _quick_launcher_actions {
+    my ($mw) = @_;
+    my @actions;
+    my $base_dir = $mw->app->share_dir;
+
+    push @actions, (
+        {
+            label       => 'New File',
+            description => 'Create a new untitled Perl file',
+            category    => 'Quick Actions',
+            rank        => 10,
+            run         => sub { $mw->editor->new_file },
+        },
+        {
+            label       => 'Open File...',
+            description => 'Open a file from disk',
+            category    => 'Quick Actions',
+            rank        => 11,
+            run         => sub { $mw->editor->open_file_dialog },
+        },
+        {
+            label       => 'Preferences...',
+            description => 'Editor, plugins, and dashboard settings',
+            category    => 'Quick Actions',
+            rank        => 12,
+            run         => sub { show_preferences($mw) },
+        },
+        {
+            label       => 'Keyboard Shortcuts',
+            description => 'Show shortcut reference',
+            category    => 'Quick Actions',
+            rank        => 13,
+            run         => sub { show_shortcuts($mw) },
+        },
+        {
+            label       => 'New Script from Template...',
+            description => 'Browse starter templates',
+            category    => 'Quick Actions',
+            rank        => 14,
+            run         => sub { show_new_from_template($mw) },
+        },
+        {
+            label       => 'Browse Tutorials...',
+            description => 'Open the Perl and Linux tutorial browser',
+            category    => 'Quick Actions',
+            rank        => 15,
+            run         => sub { show_tutorial_browser($mw) },
+        },
+        {
+            label       => 'About Perl Den IDE',
+            description => 'Version and license information',
+            category    => 'Quick Actions',
+            rank        => 16,
+            run         => sub { show_about($mw) },
+        },
+    );
+
+    if (my $current = $mw->editor->get_current_file) {
+        if (-f $current) {
+            push @actions, {
+                label       => 'Run Current Script',
+                description => $current,
+                category    => 'Quick Actions',
+                rank        => 17,
+                run         => sub {
+                    $mw->editor->save_current_file;
+                    $mw->terminal->run_command('perl ' . shell_quote($current));
+                    $mw->terminal->show_output_tab;
+                    $mw->set_status("Running: $current");
+                },
+            };
+        }
+    }
+
+    my $recent_rank = 100;
+    for my $file (@{ PerlDen::Config::recent_files() }) {
+        next unless defined $file && -f $file;
+        my $label = $file;
+        $label =~ s{.*/([^/]+/[^/]+)$}{$1};
+        push @actions, {
+            label       => "Open Recent: $label",
+            description => $file,
+            category    => 'Recent Files',
+            rank        => $recent_rank++,
+            run         => sub { $mw->editor->open_file($file) },
+        };
+    }
+
+    my $script_rank = 200;
+    for my $entry (script_index()) {
+        my ($label, $script, undef, $desc, $category) = @$entry;
+        my $script_path = "$base_dir/../scripts/$script";
+        next unless -f $script_path;
+
+        push @actions, {
+            label       => "Run Script: $label",
+            description => $desc // $script_path,
+            category    => $category // 'Scripts',
+            rank        => $script_rank++,
+            run         => sub {
+                $mw->terminal->run_command('perl ' . shell_quote($script_path));
+                $mw->terminal->show_output_tab;
+                $mw->set_status("Running: $label");
+            },
+        };
+
+        push @actions, {
+            label       => "Open Script Source: $label",
+            description => $script_path,
+            category    => $category // 'Scripts',
+            rank        => $script_rank++,
+            run         => sub { $mw->open_file_in_editor($script_path) },
+        };
+    }
+
+    my $index = 0;
+    for my $action (@actions) {
+        $action->{_index} = $index++;
+    }
+
+    return @actions;
 }
 
 sub show_preferences {

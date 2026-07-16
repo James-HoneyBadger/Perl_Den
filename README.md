@@ -23,6 +23,7 @@ Three interfaces are provided:
 - Find / Find & Replace with regex support
 - Syntax checking (`perl -c`), code formatting (Perl::Tidy), linting (Perl::Critic)
 - POD preview, auto-indent, configurable font and colour scheme
+- Quick Launcher (`Ctrl+Shift+P`) for scripts, recent files, templates, tutorials, and common actions
 
 ### Toolkit Scripts (20)
 | Category          | Scripts                                                     |
@@ -59,7 +60,7 @@ memory, swap, disk usage, and top processes — auto-refreshing every 5 s.
 git clone https://github.com/James-HoneyBadger/PerlDen.git
 cd PerlDen
 
-# Install system dependencies (Arch Linux)
+# Install system dependencies (Arch Linux example)
 sudo pacman -S perl gtk3 vte3 gtksourceview4 gobject-introspection \
     openssl polkit iproute2 inetutils procps-ng cronie iputils
 
@@ -77,7 +78,7 @@ cpanm --installdeps .
 ./perlden-tui                          # Interactive terminal UI
 ```
 
-For Debian/Ubuntu and other distros, see [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
+For Debian/Ubuntu and Fedora/RHEL package names, see [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
 
 ---
 
@@ -115,7 +116,7 @@ Perl Den/
 ├── lib/PerlDen/                  # Core modules
 │   ├── App.pm                   #   GUI application controller
 │   ├── BatchRunner.pm           #   Batch script execution + HTML/JSON export
-│   ├── Config.pm                #   YAML config, schema v4, PERLDEN_HOME support
+│   ├── Config.pm                #   YAML/JSON config, schema v4, PERLDEN_HOME support
 │   ├── Git.pm                   #   Git repository status with caching
 │   ├── Runner.pm                #   Non-blocking / sync script execution
 │   ├── ScriptRegistry.pm        #   Auto-discovery: built-ins + plugins + user scripts
@@ -154,9 +155,11 @@ Perl Den/
 ## Dependencies
 
 **Perl:** 5.28 or later  
-**System:** GTK3, VTE (≥ 2.91), GtkSourceView 4 (via GObject Introspection), systemd, iproute2, OpenSSL, libnotify  
-**CPAN:** Glib, Gtk3, YAML::XS, JSON::MaybeXS, Try::Tiny,
+**System:** GTK3, VTE (≥ 2.91), GtkSourceView 4 runtime via GObject Introspection, systemd, iproute2, OpenSSL, libnotify  
+**CPAN:** Glib, Gtk3, YAML::XS (optional at runtime; JSON::PP fallback), JSON::MaybeXS, Try::Tiny,
   IO::Socket::SSL, Net::DNS, Proc::ProcessTable, Text::Diff
+
+GtkSourceView is a system package, not a CPAN module. On Arch use `gtksourceview4`; on Debian/Ubuntu use `gir1.2-gtksource-4`; on Fedora/RHEL use `gtksourceview4`.
 
 See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) for complete specifications
 with exact versions and distro-specific install commands.

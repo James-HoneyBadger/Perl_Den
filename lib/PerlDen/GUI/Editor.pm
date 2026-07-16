@@ -87,6 +87,9 @@ sub open_file {
     my $name = basename($filepath);
     $self->_create_tab($filepath, $name, $content, 0, $disable_highlight);
     PerlDen::Config::add_recent_file($filepath);
+    if ($self->{main_window} && $self->{main_window}{toolbar}) {
+        $self->{main_window}{toolbar}->refresh_recent_menu;
+    }
     $self->{main_window}->set_status("Opened: $filepath");
 }
 

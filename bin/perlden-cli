@@ -92,7 +92,7 @@ if ($command eq 'batch') {
                 print "      Did you mean: " . join(' or ', map { "'$_'" } @sug) . "?\n" if @sug;
             }
         }
-        exit $all_ok ? 0 : 2;
+        exit($all_ok ? 0 : 2);
     }
 
     require PerlDen::BatchRunner;
@@ -332,8 +332,9 @@ sub _list_scripts {
 }
 
 sub _print_help {
+    my $ver = $PerlDen::ScriptRegistry::VERSION // 'unknown';
     print <<HELP;
-HB Perl CLI v2.0
+HB Perl CLI v$ver
 
 Usage:
   $PROGRAM list

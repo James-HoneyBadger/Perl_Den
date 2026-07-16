@@ -1,6 +1,6 @@
 package PerlDen::Scheduler;
 # ============================================================================
-# PerlDen::Scheduler - Schedule Perl Den scripts via crontab (v2.0)
+# PerlDen::Scheduler - Schedule Perl Den scripts via crontab
 # ============================================================================
 use strict;
 use warnings;

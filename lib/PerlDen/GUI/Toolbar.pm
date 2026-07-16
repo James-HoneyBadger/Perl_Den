@@ -63,6 +63,8 @@ sub _build_menubar {
 
     # ── Tools Menu ──
     my $tools_menu = Gtk3::Menu->new;
+    $self->_add_menu_item($tools_menu, 'Quick Launcher...', 'Ctrl+Shift+P', sub { PerlDen::GUI::Dialogs::show_quick_launcher($mw) });
+    $self->_add_separator($tools_menu);
     $self->_add_menu_item($tools_menu, 'Syntax Check',         'F9',    sub { $mw->editor->syntax_check });
     $self->_add_menu_item($tools_menu, 'Format Code (Tidy)',   'Ctrl+Shift+F', sub { $mw->editor->format_code });
     $self->_add_menu_item($tools_menu, 'Lint (Perl::Critic)',  '',      sub { $mw->editor->lint_code });
@@ -133,6 +135,8 @@ sub _build_quick_toolbar {
         [undef],  # separator
         ['edit-undo-symbolic',        'Undo (Ctrl+Z)',          sub { $mw->editor->undo }],
         ['edit-redo-symbolic',        'Redo (Ctrl+Shift+Z)',    sub { $mw->editor->redo }],
+        [undef],  # separator
+        ['system-search-symbolic',    'Quick Launcher (Ctrl+Shift+P)', sub { PerlDen::GUI::Dialogs::show_quick_launcher($mw) }],
         [undef],  # separator
         ['edit-find-symbolic',        'Find (Ctrl+F)',          sub { $mw->editor->show_find_bar }],
         [undef],  # separator

@@ -1,6 +1,6 @@
 package PerlDen::ScriptRegistry;
 # ============================================================================
-# PerlDen::ScriptRegistry v2.0 - Dynamic script discovery and plugin loader
+# PerlDen::ScriptRegistry - Dynamic script discovery and plugin loader
 # ============================================================================
 # Built-in scripts are auto-discovered from lib/PerlDen/Scripts/*.pm — each
 # module must export a metadata() function.  Plugins live in
@@ -72,6 +72,8 @@ my @_plugin_cache;
 my $_plugin_dir_mtime = 0;
 my @_user_scripts_cache;
 my $_user_scripts_mtime = 0;
+my $_plugin_cache_key = '';
+my $_user_scripts_cache_key = '';
 
 # Force a full re-discovery on next access (e.g. after installing a plugin)
 sub invalidate_cache {
@@ -79,8 +81,10 @@ sub invalidate_cache {
     $_builtin_loaded    = 0;
     @_plugin_cache      = ();
     $_plugin_dir_mtime  = 0;
+    $_plugin_cache_key  = '';
     @_user_scripts_cache = ();
     $_user_scripts_mtime = 0;
+    $_user_scripts_cache_key = '';
 }
 
 # ── Built-in script discovery ──────────────────────────────────────────────
@@ -159,10 +163,47 @@ sub _load_builtin_scripts {
 
 sub _disabled_plugins {
     # Avoid circular dependency — only load Config if already in %INC
-    return () unless exists $INC{'PerlDen/Config.pm'};
-    eval { require PerlDen::Config; 1 } or return ();
-    my $disabled = PerlDen::Config::get('disabled_plugins') // [];
-    return ref($disabled) eq 'ARRAY' ? @$disabled : ();
+    my @disabled;
+
+    if (exists $INC{'PerlDen/Config.pm'} && eval { require PerlDen::Config; 1 }) {
+        my $disabled = PerlDen::Config::get('disabled_plugins') // [];
+        @disabled = ref($disabled) eq 'ARRAY' ? @$disabled : ();
+    }
+
+    # Backward compatibility: older layouts stored config under
+    # $PERLDEN_HOME/perlden/config.yml instead of $PERLDEN_HOME/config.yml.
+    if (!@disabled && $ENV{PERLDEN_HOME}) {
+        my $legacy_cfg = $ENV{PERLDEN_HOME} . '/perlden/config.yml';
+        if (-f $legacy_cfg) {
+            @disabled = _parse_disabled_plugins_legacy_yaml($legacy_cfg);
+        }
+    }
+
+    return @disabled;
+}
+
+sub _parse_disabled_plugins_legacy_yaml {
+    my ($path) = @_;
+    my @out;
+    return @out unless $path && -f $path;
+
+    open my $fh, '<', $path or return @out;
+    my $in_list = 0;
+    while (my $line = <$fh>) {
+        if ($line =~ /^\s*disabled_plugins\s*:\s*$/) {
+            $in_list = 1;
+            next;
+        }
+        if ($in_list) {
+            if ($line =~ /^\s*-\s*(.+?)\s*$/) {
+                push @out, _trim($1);
+                next;
+            }
+            last if $line =~ /^\S/;
+        }
+    }
+    close $fh;
+    return @out;
 }
 
 sub _load_plugins {
@@ -170,15 +211,25 @@ sub _load_plugins {
     return () unless $dir && -d $dir;
 
     my $mtime = (stat($dir))[9] // 0;
-    return @_plugin_cache if $mtime == $_plugin_dir_mtime && @_plugin_cache;
-    $_plugin_dir_mtime = $mtime;
-    @_plugin_cache = ();
-
-    my %disabled = map { $_ => 1 } _disabled_plugins();
-
     opendir(my $dh, $dir) or return ();
     my @pm_files = sort grep { /\.pm$/ } readdir $dh;
     closedir $dh;
+
+    my %disabled = map { $_ => 1 } _disabled_plugins();
+    my $disabled_sig = join('|', sort keys %disabled);
+    my $file_sig = join('|', map {
+        my $path = "$dir/$_";
+        my $fm = (stat($path))[9] // 0;
+        "$_:$fm";
+    } @pm_files);
+    my $cache_key = join('||', $dir, $mtime, $disabled_sig, $file_sig);
+
+    return @_plugin_cache
+        if $cache_key eq $_plugin_cache_key && @_plugin_cache;
+
+    $_plugin_dir_mtime = $mtime;
+    $_plugin_cache_key = $cache_key;
+    @_plugin_cache = ();
 
     for my $file (@pm_files) {
         my $modname = $file;
@@ -236,8 +287,10 @@ sub _load_plugins {
             $meta = _parse_plugin_headers("$dir/$file");
         }
 
-        my $plugin_name = $meta->{name} // $modname;
-        next if $disabled{$plugin_name} || $disabled{$module};
+           my $plugin_name = $meta->{name} // $modname;
+           next if $disabled{$plugin_name}
+               || $disabled{$module}
+               || $disabled{$modname};
 
         push @_plugin_cache, [
             $plugin_name,
@@ -277,13 +330,23 @@ sub _load_user_scripts {
     return () unless $dir && -d $dir;
 
     my $mtime = (stat($dir))[9] // 0;
-    return @_user_scripts_cache if $mtime == $_user_scripts_mtime && @_user_scripts_cache;
-    $_user_scripts_mtime = $mtime;
-    @_user_scripts_cache = ();
-
     opendir(my $dh, $dir) or return ();
     my @files = sort grep { /\.pl$/ } readdir $dh;
     closedir $dh;
+
+    my $file_sig = join('|', map {
+        my $path = "$dir/$_";
+        my $fm = (stat($path))[9] // 0;
+        "$_:$fm";
+    } @files);
+    my $cache_key = join('||', $dir, $mtime, $file_sig);
+
+    return @_user_scripts_cache
+        if $cache_key eq $_user_scripts_cache_key && @_user_scripts_cache;
+
+    $_user_scripts_mtime = $mtime;
+    $_user_scripts_cache_key = $cache_key;
+    @_user_scripts_cache = ();
 
     for my $file (@files) {
         my $path = "$dir/$file";
@@ -460,7 +523,7 @@ __END__
 
 =head1 NAME
 
-PerlDen::ScriptRegistry v2.0 - Dynamic script discovery and plugin loader
+PerlDen::ScriptRegistry - Dynamic script discovery and plugin loader
 
 =head1 SYNOPSIS
 

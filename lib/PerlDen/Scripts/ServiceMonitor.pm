@@ -7,24 +7,56 @@ use warnings;
 
 # Minimum systemd version that supports --json=short (systemd 247, released 2020)
 my $SYSTEMD_MIN_JSON = 247;
+my $_JSON_DECODER;
+my $_HAS_SYSTEMCTL_JSON;
+
+sub _json_decoder {
+    return $_JSON_DECODER if $_JSON_DECODER;
+
+    if (eval { require JSON::MaybeXS; 1 }) {
+        $_JSON_DECODER = JSON::MaybeXS->new;
+        return $_JSON_DECODER;
+    }
+    if (eval { require JSON::PP; 1 }) {
+        $_JSON_DECODER = JSON::PP->new;
+        return $_JSON_DECODER;
+    }
+    return undef;
+}
 
 sub _systemd_version {
     my $ver = qx{systemctl --version 2>/dev/null} // '';
     return ($ver =~ /systemd\s+(\d+)/)[0] // 0;
 }
 
+sub _supports_systemctl_json {
+    return $_HAS_SYSTEMCTL_JSON if defined $_HAS_SYSTEMCTL_JSON;
+
+    # Fast path: old systemd definitely has no JSON support.
+    if (_systemd_version() < $SYSTEMD_MIN_JSON) {
+        $_HAS_SYSTEMCTL_JSON = 0;
+        return 0;
+    }
+
+    # Probe with stderr suppressed to avoid noisy "unrecognized option" output.
+    my $ok = system('sh', '-c', 'systemctl list-units --type=service --all --no-pager --json=short >/dev/null 2>/dev/null');
+    $_HAS_SYSTEMCTL_JSON = ($ok == 0) ? 1 : 0;
+    return $_HAS_SYSTEMCTL_JSON;
+}
+
 sub run {
     my (%args) = @_;
     my $filter = $args{filter} // '';
 
-    # Prefer JSON output for robustness; fall back to text on older systemd
-    return _run_json($filter) if _systemd_version() >= $SYSTEMD_MIN_JSON;
+    # Prefer JSON output when both parser and systemctl JSON mode are available.
+    return _run_json($filter)
+        if _json_decoder() && _supports_systemctl_json();
     return _run_text($filter);
 }
 
 sub _run_json {
     my ($filter) = @_;
-    require JSON::MaybeXS;
+    my $decoder = _json_decoder() or return _run_text($filter);
 
     my $raw = '';
     if (open my $fh, '-|', 'systemctl', 'list-units', '--type=service',
@@ -32,9 +64,13 @@ sub _run_json {
         local $/;
         $raw = <$fh> // '';
         close $fh;
+        return _run_text($filter) if $?;
+    } else {
+        return _run_text($filter);
     }
 
-    my $data = eval { JSON::MaybeXS->new->decode($raw) } // [];
+    my $data = eval { $decoder->decode($raw) };
+    return _run_text($filter) if $@ || ref($data) ne 'ARRAY';
 
     my (@services, @failed);
     for my $u (@$data) {

@@ -58,15 +58,26 @@ check_perl_module() {
 check_gui_deps() {
   local missing=()
 
-  for mod in Glib Glib::Object::Introspection Gtk3 Gtk3::SourceView; do
+  for mod in Glib Glib::Object::Introspection Gtk3; do
     if ! check_perl_module "$mod"; then
       missing+=("$mod")
     fi
   done
 
+  if ! perl -I"${PERLDEN_ROOT_DIR}/lib" -e '
+      use Glib::Object::Introspection;
+      Glib::Object::Introspection->setup(
+          basename => "GtkSource",
+          version => "4",
+          package => "Gtk3::SourceView",
+      );' >/dev/null 2>&1; then
+    missing+=("GtkSourceView runtime")
+  fi
+
   if (( ${#missing[@]} > 0 )); then
     _bo_fail "Missing GUI Perl modules: ${missing[*]}"
     echo "       Install with: cpanm --installdeps \"${PERLDEN_ROOT_DIR}\"" >&2
+    echo "       For GtkSourceView, install the system package gtksourceview4" >&2
     return 1
   fi
 }
@@ -102,7 +113,7 @@ preflight_gui() {
   fi
 
   # 4. GTK / GUI Perl modules
-  local gui_mods=(Glib Glib::Object::Introspection Gtk3 Gtk3::SourceView)
+  local gui_mods=(Glib Glib::Object::Introspection Gtk3)
   local gui_missing=()
   for mod in "${gui_mods[@]}"; do
     if check_perl_module "$mod"; then
@@ -113,6 +124,20 @@ preflight_gui() {
       (( errors++ ))
     fi
   done
+
+  if perl -I"${PERLDEN_ROOT_DIR}/lib" -e '
+      use Glib::Object::Introspection;
+      Glib::Object::Introspection->setup(
+          basename => "GtkSource",
+          version => "4",
+          package => "Gtk3::SourceView",
+      );' >/dev/null 2>&1; then
+    _bo_ok "GtkSourceView runtime"
+  else
+    _bo_fail "GtkSourceView runtime — NOT FOUND"
+    gui_missing+=("GtkSourceView runtime")
+    (( errors++ ))
+  fi
 
   # 5. VTE terminal (optional but important)
   if perl -I"${PERLDEN_ROOT_DIR}/lib" -e '
@@ -217,6 +242,7 @@ preflight_gui() {
     _bo_fail "${errors} critical issue(s) found — the IDE may not start correctly"
     if (( ${#gui_missing[@]} > 0 )); then
       echo "       Install Perl deps: cpanm --installdeps \"${PERLDEN_ROOT_DIR}\"" >&2
+      echo "       Install GtkSourceView runtime package: gtksourceview4" >&2
     fi
     return 1
   else

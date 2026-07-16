@@ -49,7 +49,9 @@ Declared in both `Makefile.PL` and `cpanfile`.
 | `Glib::Object::Introspection`  | 0.049       | GObject Introspection bindings   |
 | `Gtk3`                         | 0.038       | GTK3 widget toolkit              |
 
-> **GtkSourceView** is loaded at runtime via `Glib::Object::Introspection` (mapped to the `Gtk3::SourceView::*` namespace). No separate CPAN module is required — install the system package `gir1.2-gtksource-4` (Debian) or `gtksourceview4` (Arch) instead.
+> **GtkSourceView** is loaded at runtime via `Glib::Object::Introspection` (mapped to the `Gtk3::SourceView::*` namespace). No separate CPAN module is required — install the system package `gir1.2-gtksource-4` (Debian/Ubuntu) or `gtksourceview4` (Arch/Fedora) instead.
+
+> `YAML::XS` is used when available for config/session persistence, but PerlDen can fall back to the core `JSON::PP` module for fresh installs that do not have it yet.
 
 ### 3.2 Sysadmin / Core
 
@@ -60,7 +62,7 @@ Declared in both `Makefile.PL` and `cpanfile`.
 | `IO::Socket::SSL`     | 2.085       | SSL/TLS connections (SSLChecker)         |
 | `Net::SSLeay`         | 1.92        | Low-level SSL (used by SSLChecker)       |
 | `Text::Diff`          | 1.45        | File comparison (ConfigDiff)             |
-| `YAML::XS`            | 0.88        | Config file persistence                  |
+| `YAML::XS`            | 0.88        | Config file persistence (YAML preferred; JSON::PP fallback) |
 | `JSON::MaybeXS`       | 1.004       | JSON parsing                             |
 
 ### 3.3 Developer Tools
@@ -130,6 +132,27 @@ sudo pacman -S cronie       # crontab command
 
 # Core system
 sudo pacman -S coreutils    # df, uname, etc.
+```
+
+### Debian / Ubuntu Packages
+
+```bash
+# GTK3 toolkit and related
+sudo apt install perl libgtk3-perl libvte-2.91-dev gir1.2-gtksource-4 \
+    libglib-object-introspection-perl gobject-introspection
+
+# System dependencies
+sudo apt install openssl policykit-1 iproute2 procps cron iputils-ping util-linux
+```
+
+### Fedora / RHEL Packages
+
+```bash
+# GTK3 toolkit and related
+sudo dnf install perl gtk3 vte291 gtksourceview4 gobject-introspection
+
+# System dependencies
+sudo dnf install openssl polkit iproute procps-ng cronie iputils util-linux
 ```
 
 ### Reference Versions
@@ -269,7 +292,7 @@ Perl Den/                     # Project root ($PERLDEN_ROOT_DIR)
 ├── lib/PerlDen/              # Perl modules
 │   ├── App.pm               # GUI application controller
 │   ├── BatchRunner.pm       # Batch/parallel script execution
-│   ├── Config.pm            # YAML-based config persistence
+│   ├── Config.pm            # YAML/JSON config persistence
 │   ├── Git.pm               # Git repository status with caching
 │   ├── Runner.pm            # Non-blocking script execution
 │   ├── ScriptRegistry.pm    # Canonical script index
@@ -345,6 +368,14 @@ Set automatically by `_perlden_env.sh` when launching via the wrapper scripts.
 
 ## 9. Installation Quick Reference
 
+GtkSourceView is always a system package, not a CPAN dependency. The package name differs by distro:
+
+| Distro        | GtkSourceView 4 package                        |
+|---------------|------------------------------------------------|
+| Arch Linux    | `gtksourceview4`                               |
+| Debian/Ubuntu | `gir1.2-gtksource-4`                           |
+| Fedora/RHEL   | `gtksourceview4`                               |
+
 ### Arch Linux (Full Setup)
 
 ```bash
@@ -376,9 +407,9 @@ prove -l t/00_compile.t          # Module compile test
 
 ```bash
 # 1. System dependencies
-sudo apt install perl libgtk3-perl libvte-2.91-dev libgtksourceview-4-dev \
-    gir1.2-vte-2.91 gir1.2-gtksource-4 libglib-object-introspection-perl \
-    openssl policykit-1 iproute2 procps cron iputils-ping
+sudo apt install perl libgtk3-perl libvte-2.91-dev gir1.2-gtksource-4 \
+    libglib-object-introspection-perl gobject-introspection \
+    openssl policykit-1 iproute2 procps cron iputils-ping util-linux
 
 # 2. Unicode fonts
 sudo apt install fonts-noto fonts-noto-color-emoji fonts-noto-cjk fonts-freefont-ttf
@@ -386,6 +417,23 @@ fc-cache -f
 
 # 3. Perl module dependencies
 sudo apt install cpanminus
+cpanm --installdeps .
+```
+
+### Fedora / RHEL (Full Setup)
+
+```bash
+# 1. System dependencies
+sudo dnf install perl gtk3 vte291 gtksourceview4 gobject-introspection \
+    openssl polkit iproute procps-ng cronie iputils util-linux
+
+# 2. Unicode fonts
+sudo dnf install google-noto-fonts-common google-noto-emoji-fonts \
+    google-noto-sans-cjk-fonts google-noto-serif-cjk-fonts gnu-free-fonts-common
+fc-cache -f
+
+# 3. Perl module dependencies
+sudo dnf install perl-CPAN
 cpanm --installdeps .
 ```
 
@@ -411,12 +459,14 @@ perl -I lib -e '
     use Net::DNS;
     use IO::Socket::SSL;
     use Text::Diff;
-    use YAML::XS;
     use JSON::MaybeXS;
     use Perl::Tidy;
     use Perl::Critic;
     print "All modules OK\n";
 '
+
+# Optional: YAML::XS if you want YAML-backed persistence instead of the JSON::PP fallback
+perl -e 'eval { require YAML::XS; 1 } ? print "YAML::XS OK\n" : print "YAML::XS unavailable; JSON::PP fallback will be used\n"'
 
 # VTE terminal widget (GObject Introspection)
 perl -e '

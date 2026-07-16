@@ -198,7 +198,7 @@ sub run_command {
     if ($self->{has_vte} && $self->{terminal_widget}) {
         # Switch to terminal tab and type the command
         $self->{notebook}->set_current_page(0);
-        $self->{terminal_widget}->feed_child("$command\n", -1);
+        $self->{terminal_widget}->feed_child("$command\n");
     } else {
         # Fall back to Runner with output panel
         $self->{notebook}->set_current_page($self->{has_vte} ? 1 : 0);

@@ -224,6 +224,10 @@ sub _handle_keypress {
             $self->{editor}->show_find_replace_bar;
             return TRUE;
         }
+        elsif ($key == Gtk3::Gdk::KEY_p() && $shift) {
+            PerlDen::GUI::Dialogs::show_quick_launcher($self);
+            return TRUE;
+        }
         elsif ($key == Gtk3::Gdk::KEY_F5()) {
             $self->run_current_script;
             return TRUE;

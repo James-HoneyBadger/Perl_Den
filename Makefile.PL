@@ -18,7 +18,6 @@ WriteMakefile(
         'Glib'                        => '1.329',
         'Glib::Object::Introspection' => '0.049',
         'Gtk3'                        => '0.038',
-        'Gtk3::SourceView'            => '0.12',
         'Proc::ProcessTable'          => '0.634',
         'Net::DNS'                    => '1.36',
         'IO::Socket::SSL'             => '2.085',

@@ -11,6 +11,7 @@ This reference lists all keyboard shortcuts available in the GTK3 GUI (`perlden-
 | `Ctrl+Q` | Quit Perl Den |
 | `F1` | Open Help / About dialog |
 | `Ctrl+,` | Open Preferences dialog |
+| `Ctrl+Shift+P` | Open Quick Launcher |
 
 ---
 

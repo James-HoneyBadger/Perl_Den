@@ -8,7 +8,6 @@ requires 'perl', '5.028';
 requires 'Glib',                        '1.329';
 requires 'Glib::Object::Introspection', '0.049';
 requires 'Gtk3',                        '0.038';
-requires 'Gtk3::SourceView',            '0.12';
 
 # ── Sysadmin Modules ──
 requires 'Proc::ProcessTable',          '0.634';

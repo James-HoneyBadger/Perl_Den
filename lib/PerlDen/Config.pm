@@ -8,8 +8,15 @@ use utf8;
 use File::Path qw(make_path);
 use File::Temp;
 use Fcntl qw(:flock);
-use YAML::XS qw(LoadFile DumpFile);
 use Carp qw(carp);
+use JSON::PP ();
+
+my $HAS_YAML_XS = eval {
+    require YAML::XS;
+    1;
+};
+
+my $JSON = JSON::PP->new->utf8->canonical->pretty;
 
 our $VERSION = '2.01';
 
@@ -21,6 +28,8 @@ our $CONFIG_FILE;
 our $SESSION_FILE;
 our $DATA = {};
 our $SESSION = {};
+our $CONFIG_LOAD_ERROR = '';
+our $SESSION_LOAD_ERROR = '';
 
 sub _ensure_dir {
     # PERLDEN_HOME overrides the default ~/.config/perlden base
@@ -61,9 +70,13 @@ my %CONFIG_SCHEMA = (
 
 sub load {
     _ensure_dir();
+    $CONFIG_LOAD_ERROR = '';
     if (-f $CONFIG_FILE) {
         eval { $DATA = _load_yaml_locked($CONFIG_FILE) // {} };
-        carp "Config load error: $@" if $@;
+        if ($@) {
+            $CONFIG_LOAD_ERROR = $@;
+            carp "Config load error: $@";
+        }
     }
 
     # Migrate from older schema versions
@@ -99,6 +112,10 @@ sub load {
 
 sub save {
     _ensure_dir();
+    if ($CONFIG_LOAD_ERROR && -f $CONFIG_FILE) {
+        carp "Config save skipped: existing config could not be parsed; refusing to overwrite. Error: $CONFIG_LOAD_ERROR";
+        return;
+    }
     $DATA->{_config_version} = $CONFIG_SCHEMA_VERSION;
     _save_yaml_locked($CONFIG_FILE, $DATA);
 }
@@ -131,9 +148,13 @@ sub recent_files {
 
 sub load_session {
     _ensure_dir();
+    $SESSION_LOAD_ERROR = '';
     if (-f $SESSION_FILE) {
         eval { $SESSION = _load_yaml_locked($SESSION_FILE) // {} };
-        carp "Session load error: $@" if $@;
+        if ($@) {
+            $SESSION_LOAD_ERROR = $@;
+            carp "Session load error: $@";
+        }
     }
     $SESSION->{window_width}  //= 1400;
     $SESSION->{window_height} //= 900;
@@ -152,6 +173,10 @@ sub load_session {
 
 sub save_session {
     _ensure_dir();
+    if ($SESSION_LOAD_ERROR && -f $SESSION_FILE) {
+        carp "Session save skipped: existing session file could not be parsed; refusing to overwrite. Error: $SESSION_LOAD_ERROR";
+        return;
+    }
     $SESSION->{_saved_at} = time();
     _save_yaml_locked($SESSION_FILE, $SESSION);
 }
@@ -198,7 +223,15 @@ sub _load_yaml_locked {
     local $/;
     my $raw = <$fh>;
     close $fh;
-    my $data = eval { YAML::XS::Load($raw) };
+    my $data = eval {
+        if ($HAS_YAML_XS) {
+            YAML::XS::Load($raw);
+        } else {
+            my $decoded = eval { $JSON->decode($raw) };
+            die "YAML::XS unavailable and JSON fallback failed: $@" if $@;
+            $decoded;
+        }
+    };
     die $@ if $@;
     # Validate structure is a plain hashref (defense against YAML object instantiation)
     die "Config file $file: expected hash, got " . ref($data)
@@ -211,15 +244,22 @@ sub _save_yaml_locked {
     _ensure_dir();
     eval {
         my $tmp = File::Temp->new(DIR => $CONFIG_DIR, SUFFIX => '.tmp', UNLINK => 0);
-        DumpFile($tmp->filename, $data);
+        my $tmp_path = $tmp->filename;
+        open my $tmp_fh, '>', $tmp_path or die "Cannot write $tmp_path: $!";
+        if ($HAS_YAML_XS) {
+            print {$tmp_fh} YAML::XS::Dump($data);
+        } else {
+            print {$tmp_fh} $JSON->encode($data);
+        }
+        close $tmp_fh or die "Cannot close $tmp_path: $!";
         # Acquire exclusive lock on target before rename
         if (open my $lock_fh, '>>', $file) {
             flock($lock_fh, LOCK_EX) or carp "Cannot lock $file: $!";
-            rename($tmp->filename, $file)
+            rename($tmp_path, $file)
                 or die "rename failed: $!";
             close $lock_fh;
         } else {
-            rename($tmp->filename, $file)
+            rename($tmp_path, $file)
                 or die "rename failed: $!";
         }
     };
