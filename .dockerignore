@@ -1,0 +1,13 @@
+.git
+.github
+.vscode
+blib
+_build
+cover_db
+local
+*.tar.gz
+*.tmp
+MYMETA.json
+MYMETA.yml
+META_new.json
+META_new.yml

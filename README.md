@@ -103,6 +103,16 @@ perlden-cli system_info
 perlden-gui
 ```
 
+### Option C: Install as a desktop application
+
+```bash
+# Installs a desktop menu entry and icon into ~/.local/share
+./install_perlden_desktop.sh --user
+
+# Search your desktop menu for:
+#   Perl Den
+```
+
 ---
 
 ## Project Structure

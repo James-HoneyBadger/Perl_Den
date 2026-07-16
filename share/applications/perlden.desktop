@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Perl Den
+Comment=GTK3 IDE and Perl sysadmin toolkit
+Exec=@ROOT_DIR@/perlden-gui %U
+Icon=perlden
+Terminal=false
+Categories=Development;Education;Utility;
+Keywords=Perl;GTK;IDE;Sysadmin;Terminal;
+StartupNotify=true

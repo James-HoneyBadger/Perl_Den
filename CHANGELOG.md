@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.1.2] — 2026-07-16
+
+### Added
+
+- `install_perlden_desktop.sh` to install a freedesktop application launcher for Perl Den into the DE menu
+- `share/applications/perlden.desktop` as the desktop entry template used by the installer
+- README installation guidance for the desktop-menu install flow
+
+### Changed
+
+- Desktop launcher now installs the Perl Den icon into the local hicolor icon theme so it appears in application menus
+
+---
+
 ## [2.1.0] — 2026-05-19
 
 ### Added
